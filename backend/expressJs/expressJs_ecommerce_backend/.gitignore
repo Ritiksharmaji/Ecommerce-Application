@@ -6,5 +6,7 @@ node_modules/
 # local env files
 .env*.local
 
-
-
+# build output
+dist/
+dist-lambda/
+lambda.zip

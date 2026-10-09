@@ -5,8 +5,11 @@ import axios from 'axios'
 
 export const ShopContext = createContext();
 
-// Base URL of the expressJs_ecommerce_backend backend (no trailing /api), e.g. http://localhost:3000
-const backendUrl = import.meta.env.VITE_BACKEND_URL
+// Base URL of the expressJs_ecommerce_backend backend (no trailing /api).
+// `npm run dev` uses .env.development (http://localhost:3000); production builds use the deployed
+// API on AWS unless VITE_BACKEND_URL overrides it (e.g. in .env.production).
+const PRODUCTION_API_URL = 'https://api.shopvra.space'
+const backendUrl = import.meta.env.VITE_BACKEND_URL || (import.meta.env.PROD ? PRODUCTION_API_URL : 'http://localhost:3000')
 
 const api = axios.create({ baseURL: backendUrl })
 

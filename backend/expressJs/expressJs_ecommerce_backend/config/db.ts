@@ -1,20 +1,26 @@
 import mongoose from "mongoose";
 
+let listenersAdded = false;
+
+// Throws on failure: the local server exits, while on Lambda the request fails and the next one retries.
 const connectDB = async () => {
     const uri = process.env.MONGODB_URI;
 
     if (!uri) {
-        console.error("[DB] MONGODB_URI is not set in your .env file.");
-        process.exit(1);
+        console.error("[DB] MONGODB_URI is not set (.env locally, environment variables on Lambda).");
+        throw new Error("MONGODB_URI is not set");
     }
 
-    mongoose.connection.on("connected", () => {
-        console.log("[DB] MongoDB connected");
-    });
+    if (!listenersAdded) {
+        listenersAdded = true;
+        mongoose.connection.on("connected", () => {
+            console.log("[DB] MongoDB connected");
+        });
 
-    mongoose.connection.on("error", (err) => {
-        console.error("[DB] MongoDB connection error:", err.message);
-    });
+        mongoose.connection.on("error", (err) => {
+            console.error("[DB] MongoDB connection error:", err.message);
+        });
+    }
 
     try {
         await mongoose.connect(uri, {
@@ -33,7 +39,7 @@ const connectDB = async () => {
                 "  4. Or use the non-SRV connection string (mongodb:// with :27017 hosts) from Atlas.\n"
             );
         }
-        process.exit(1);
+        throw err;
     }
 };
 

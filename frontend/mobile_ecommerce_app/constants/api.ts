@@ -4,12 +4,14 @@ import Constants from "expo-constants";
 import type { Product } from "@/constants/types";
 import { normalizeProducts } from "@/constants/normalize";
 
-// Base URL of the expressJs_ecommerce_backend (Express + MongoDB) backend, default PORT 3000.
+// Base URL of the expressJs_ecommerce_backend (Express + MongoDB) backend.
 // Endpoints in this app already include the `/api/...` prefix, so the base URL must NOT end with /api.
 //
-// 1. EXPO_PUBLIC_API_URL (mobile_ecommerce_app/.env) wins when set - use it for the deployed backend.
-// 2. Otherwise, in development, use the same machine Expo is served from (port 3000), so a
-//    phone on Wi-Fi keeps working when your PC's IP changes, and the web build uses its own host.
+// 1. EXPO_PUBLIC_API_URL wins when set (mobile_ecommerce_app/.env, or `env` in eas.json for EAS builds).
+// 2. Release builds (APK / app bundle) use the deployed API on AWS: https://api.shopvra.space
+// 3. Development (`npx expo start`) uses port 3000 on the PC running Expo, so a phone on the same
+//    Wi-Fi keeps working when your PC's IP changes; the Expo web build uses its own host.
+const PRODUCTION_API_URL = "https://api.shopvra.space";
 const ENV_API_URL = process.env.EXPO_PUBLIC_API_URL;
 const BACKEND_PORT = 3000;
 
@@ -25,8 +27,12 @@ const FALLBACK_API_URL = Platform.select({
     default: "http://localhost:3000",
 });
 
-const host = devHost();
-const BASE_URL = ENV_API_URL || (host ? `http://${host}:${BACKEND_PORT}` : FALLBACK_API_URL);
+const devUrl = () => {
+    const host = devHost();
+    return host ? `http://${host}:${BACKEND_PORT}` : FALLBACK_API_URL;
+};
+
+const BASE_URL = ENV_API_URL || (__DEV__ ? devUrl() : PRODUCTION_API_URL);
 
 const api = axios.create({ baseURL: BASE_URL });
 

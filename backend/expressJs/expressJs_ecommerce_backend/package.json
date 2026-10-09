@@ -7,7 +7,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "tsx server.ts",
     "server": "nodemon --exec tsx server.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "start:prod": "node dist/server.js",
+    "build:lambda": "node scripts/build-lambda.mjs"
   },
   "type": "module",
   "keywords": [],
@@ -22,15 +24,18 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.3",
     "multer": "^2.1.0",
+    "serverless-http": "^3.2.0",
     "stripe": "^20.4.0"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.164",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.0.0",
     "@types/node": "^25.3.2",
+    "esbuild": "^0.25.12",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",

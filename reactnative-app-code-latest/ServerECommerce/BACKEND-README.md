@@ -142,13 +142,15 @@ Open your web browser and navigate to http://localhost:3000 to see the
 6) ![alt text](image-7.png)
 
 ## ============ configure mongoDB , cleark and cloudnary ===
+> **Note:** Clerk was later removed. Auth now uses MongoDB + JWT (`/api/auth/register`, `/api/auth/login`, `/api/auth/me`). The Clerk steps below are kept for history only.
+
 1) npm install mongoose
 2) ![alt text](image-8.png)
 3) ![alt text](image-9.png)
 4) ![alt text](image-10.png)
 5) ![alt text](image-11.png)
 6) ![alt text](image-12.png)
-7) now next is configure the clerk webhook 
+7) now next is configure the clerk webhook (legacy - no longer used)
 8) ![alt text](image-13.png)
 9) ![alt text](image-14.png)
 10) ![alt text](image-15.png)
@@ -162,7 +164,9 @@ Open your web browser and navigate to http://localhost:3000 to see the
 18) ![alt text](image-23.png)
 19) 
 
-## =========== deplay it on vercel so that we can provide the endpoint to clerk webhook ==
+## =========== deplay it on vercel ==
+> Originally deployed to expose the Clerk webhook (now removed). The Vercel deployment steps still apply.
+
 1) ![alt text](image-24.png)
 2) ![alt text](image-25.png)
 3) ![alt text](image-26.png)

@@ -292,7 +292,9 @@ Just tell me 👍
 9) ![alt text](image-38.png)
 
 
-### =========== Add user authentication with Clerk =============
+### =========== Add user authentication with Clerk (legacy) =============
+> **Note:** Clerk was later removed. The app now logs in against the backend (`/api/auth/*`) using JWT, stored with `expo-secure-store` (see `context/AuthContext.tsx`). Steps below are kept for history only.
+
 1) npm install @clerk/clerk-expo
 2) then create project on cleark website and 
 3) ![alt text](image-31.png)

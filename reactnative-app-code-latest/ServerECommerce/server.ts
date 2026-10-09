@@ -12,17 +12,21 @@ import WishlistRouter from "./routes/wishlistRoutes.js";
 import AdminRouter from "./routes/adminRoutes.js";
 import paymentRouter from "./routes/paymentRoute.js";
 import { handleStripeWebhook } from "./controllers/paymentController.js";
+import Address from "./models/Address.js";
 
 const app = express();
 
 // Connect to MongoDB
 await connectDB();
+// Drop indexes no longer in the schemas (e.g. the old unique index on Address.user)
+await Address.syncIndexes();
 // Middleware
 app.use(cors());
+// Stripe Webhook - must be registered before express.json() so the raw body
+// is available for signature verification
+process.env.STRIPE_SECRET_KEY && app.post("/api/stripe", express.raw({ type: "application/json" }), handleStripeWebhook);
 app.use(express.json());
 await makeAdmin();
-// Stripe Webhook
-process.env.STRIPE_SECRET_KEY && app.post("/api/stripe", express.raw({ type: "application/json" }), handleStripeWebhook);
 process.env.STRIPE_SECRET_KEY && app.use("/api/payments", paymentRouter);
 const port = process.env.PORT || 3000;
 

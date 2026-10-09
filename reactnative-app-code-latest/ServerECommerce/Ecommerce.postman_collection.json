@@ -1,560 +1,2072 @@
 {
   "info": {
-    "name": "Ecommerce API (MongoDB + JWT)",
-    "_postman_id": "b1e7c2a0-9f3d-4c1a-8e2b-ecommerceapi001",
-    "description": "Full REST API collection for the Ecommerce React Native backend (Express + MongoDB + JWT auth).\n\n## Setup\n1. Select an environment (or use the collection variables `baseUrl` and `token`).\n2. Run **Auth > Login** (or **Register**). The test script automatically stores the returned JWT into the `token` collection variable.\n3. All protected requests use `Authorization: Bearer {{token}}` via the collection-level auth, so you do not need to paste the token manually.\n\n## Notes\n- `{{baseUrl}}` defaults to `http://localhost:3000/api`.\n- Admin-only routes require a user with `role: admin` (set via ADMIN_EMAIL / ADMIN_PASSWORD on the server).\n- Product create/update use `multipart/form-data` (image file upload via Cloudinary).",
+    "_postman_id": "b6f0c1de-ecom-4a1e-9f00-full-flow-0001",
+    "name": "Ecommerce API - Full Flow (with dummy data)",
+    "description": "Complete, ordered test flow for the ServerECommerce backend.\n\nHOW TO USE\n1. Import this collection AND 'Ecommerce.postman_environment.json'.\n2. Select the 'Ecommerce - Local' environment (top-right).\n3. Start the server (npm run server) -> http://localhost:3000.\n4. Run the folders top to bottom (or click 'Run collection').\n   Tokens and IDs (adminToken, userToken, productId, addressId, orderId...) are saved automatically by test scripts.\n\nTOKENS\n- adminToken: from '1.1 Admin Login' (ADMIN_EMAIL/ADMIN_PASSWORD from .env)\n- userToken:  from '1.2 Register New User' (a unique email is generated each run)\n\nSeeded dummy users (password Test@1234): rahul.verma@example.com, priya.singh@example.com, amit.kumar@example.com",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "auth": {
-    "type": "bearer",
-    "bearer": [
-      {
-        "key": "token",
-        "value": "{{token}}",
-        "type": "string"
-      }
-    ]
-  },
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:3000/api",
-      "type": "string"
-    },
-    {
-      "key": "token",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "productId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "orderId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "addressId",
-      "value": "",
-      "type": "string"
-    }
-  ],
   "item": [
     {
-      "name": "Auth",
+      "name": "0. Health",
+      "description": "Server alive check.",
       "item": [
         {
-          "name": "Register",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const res = pm.response.json();",
-                  "if (res && res.success && res.token) {",
-                  "  pm.collectionVariables.set('token', res.token);",
-                  "  console.log('Token saved from Register');",
-                  "}",
-                  "pm.test('Status is 201', () => pm.response.code === 201);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": { "type": "noauth" },
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"secret123\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "register"]
-            },
-            "description": "Create a new user. Returns `{ success, token, user }`. No auth required."
-          }
-        },
-        {
-          "name": "Login",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const res = pm.response.json();",
-                  "if (res && res.success && res.token) {",
-                  "  pm.collectionVariables.set('token', res.token);",
-                  "  console.log('Token saved from Login');",
-                  "}",
-                  "pm.test('Status is 200', () => pm.response.code === 200);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": { "type": "noauth" },
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"secret123\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "login"]
-            },
-            "description": "Authenticate. Returns `{ success, token, user }`. The test script saves the token automatically. No auth required."
-          }
-        },
-        {
-          "name": "Get Me",
+          "name": "0.1 Server Health",
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/auth/me",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "me"]
+            "auth": {
+              "type": "noauth"
             },
-            "description": "Return the currently authenticated user. Requires Bearer token."
-          }
+            "url": {
+              "raw": "{{serverUrl}}/",
+              "host": [
+                "{{serverUrl}}"
+              ],
+              "path": [
+                ""
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test(\"Server is Live\", () => pm.expect(pm.response.text()).to.include(\"Live\"));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
     {
-      "name": "Products",
+      "name": "1. Auth",
+      "description": "Login admin, register a fresh user, check /me.",
       "item": [
         {
-          "name": "Get All Products",
+          "name": "1.1 Admin Login",
           "request": {
-            "auth": { "type": "noauth" },
-            "method": "GET",
-            "header": [],
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
-              "raw": "{{baseUrl}}/products?page=1&limit=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["products"],
-              "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "10" }
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "if (pm.response.code < 300) { pm.environment.set(\"adminToken\", pm.response.json().token); console.log(\"adminToken =\", pm.environment.get(\"adminToken\")); }",
+                  "pm.test(\"Role is admin\", () => pm.expect(pm.response.json().user.role).to.eql(\"admin\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Register New User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                  "if (pm.response.code < 300) { pm.environment.set(\"userToken\", pm.response.json().token); console.log(\"userToken =\", pm.environment.get(\"userToken\")); }",
+                  "if (pm.response.code < 300) { pm.environment.set(\"userId\", pm.response.json().user._id); console.log(\"userId =\", pm.environment.get(\"userId\")); }"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set(\"userEmail\", \"testuser\" + Date.now() + \"@example.com\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.3 Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
               ]
             },
-            "description": "List active products (paginated). Public."
-          }
+            "description": "To log in as a seeded user instead, use rahul.verma@example.com / Test@1234."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "if (pm.response.code < 300) { pm.environment.set(\"userToken\", pm.response.json().token); console.log(\"userToken =\", pm.environment.get(\"userToken\")); }"
+                ]
+              }
+            }
+          ]
         },
         {
-          "name": "Get Single Product",
+          "name": "1.4 Get Me (user)",
           "request": {
-            "auth": { "type": "noauth" },
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/products/{{productId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["products", "{{productId}}"]
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
             },
-            "description": "Get a product by id. Public."
-          }
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
         },
         {
-          "name": "Create Product (Admin)",
+          "name": "1.5 Get Me (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.6 Login Wrong Password (expect 401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"wrong-password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 401\", () => pm.expect(pm.response.code).to.be.oneOf([401]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Products",
+      "description": "Public listing + admin CRUD. Images can be URLs (JSON) or files (form-data).",
+      "item": [
+        {
+          "name": "2.1 Get All Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Saves the 1st and 3rd product IDs as productId / productId2."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "if (pm.response.code < 300) { pm.environment.set(\"productId\", pm.response.json().data[0]._id); console.log(\"productId =\", pm.environment.get(\"productId\")); }",
+                  "if (pm.response.code < 300) { pm.environment.set(\"productId2\", (pm.response.json().data[2] || pm.response.json().data[0])._id); console.log(\"productId2 =\", pm.environment.get(\"productId2\")); }",
+                  "pm.test(\"Has products\", () => pm.expect(pm.response.json().data.length).to.be.above(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2 Get Single Product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3 Create Product - JSON image URLs (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Men Slim Fit Denim Jacket\",\n  \"description\": \"Classic slim fit denim jacket with button front and chest pockets.\",\n  \"price\": 95,\n  \"comparePrice\": 120,\n  \"images\": [\n    \"https://raw.githubusercontent.com/avinashdm/gs-images/main/forever/p_img11.png\"\n  ],\n  \"sizes\": [\n    \"S\",\n    \"M\",\n    \"L\",\n    \"XL\"\n  ],\n  \"category\": \"Men\",\n  \"stock\": 40,\n  \"isFeatured\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                  "if (pm.response.code < 300) { pm.environment.set(\"newProductId\", pm.response.json().data._id); console.log(\"newProductId =\", pm.environment.get(\"newProductId\")); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.4 Create Product - Upload Image File (Admin)",
           "request": {
             "method": "POST",
             "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "name", "value": "Classic T-Shirt", "type": "text" },
-                { "key": "description", "value": "A comfortable cotton t-shirt", "type": "text" },
-                { "key": "price", "value": "29.99", "type": "text" },
-                { "key": "category", "value": "Men", "type": "text" },
-                { "key": "stock", "value": "100", "type": "text" },
-                { "key": "sizes", "value": "S,M,L,XL", "type": "text" },
-                { "key": "images", "type": "file", "src": [] }
+                {
+                  "key": "name",
+                  "value": "Women Floral Summer Dress",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Breezy floral print summer dress with a flattering A-line cut.",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "58",
+                  "type": "text"
+                },
+                {
+                  "key": "comparePrice",
+                  "value": "75",
+                  "type": "text"
+                },
+                {
+                  "key": "category",
+                  "value": "Women",
+                  "type": "text"
+                },
+                {
+                  "key": "stock",
+                  "value": "30",
+                  "type": "text"
+                },
+                {
+                  "key": "sizes",
+                  "value": "S,M,L",
+                  "type": "text"
+                },
+                {
+                  "key": "isFeatured",
+                  "value": "false",
+                  "type": "text"
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "description": "Pick 1-5 image files. Uploaded to Cloudinary."
+                }
               ]
             },
             "url": {
               "raw": "{{baseUrl}}/products",
-              "host": ["{{baseUrl}}"],
-              "path": ["products"]
-            },
-            "description": "Create a product (admin only). Uses multipart/form-data. Attach 1-5 files under the `images` key (uploaded to Cloudinary). `sizes` may be a comma-separated string or JSON array. At least one image is required."
-          }
-        },
-        {
-          "name": "Update Product (Admin)",
-          "request": {
-            "method": "PUT",
-            "header": [],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                { "key": "name", "value": "Updated T-Shirt", "type": "text" },
-                { "key": "price", "value": "24.99", "type": "text" },
-                { "key": "stock", "value": "80", "type": "text" },
-                { "key": "sizes", "value": "M,L,XL", "type": "text" },
-                { "key": "existingImages", "value": "https://res.cloudinary.com/.../old.jpg", "type": "text", "description": "Repeat this key for each image you want to keep" },
-                { "key": "images", "type": "file", "src": [], "description": "Optional: new image files to append" }
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products"
               ]
             },
-            "url": {
-              "raw": "{{baseUrl}}/products/{{productId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["products", "{{productId}}"]
-            },
-            "description": "Update a product (admin only). multipart/form-data. Provide `existingImages` (repeatable) for images to retain, and optionally new `images` files to append."
-          }
-        },
-        {
-          "name": "Delete Product (Admin)",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/products/{{productId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["products", "{{productId}}"]
-            },
-            "description": "Delete a product and its Cloudinary images (admin only)."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Cart",
-      "item": [
-        {
-          "name": "Get Cart",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/cart",
-              "host": ["{{baseUrl}}"],
-              "path": ["cart"]
-            },
-            "description": "Get the authenticated user's cart (created empty if none exists)."
-          }
-        },
-        {
-          "name": "Add To Cart",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 1,\n  \"size\": \"M\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/cart/add",
-              "host": ["{{baseUrl}}"],
-              "path": ["cart", "add"]
-            },
-            "description": "Add an item to the cart. Validates stock."
-          }
-        },
-        {
-          "name": "Update Cart Item",
-          "request": {
-            "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"quantity\": 3,\n  \"size\": \"M\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/cart/item/{{productId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["cart", "item", "{{productId}}"]
-            },
-            "description": "Update quantity for a product+size in the cart. Set quantity <= 0 to remove. `size` in body identifies the line item."
-          }
-        },
-        {
-          "name": "Remove Cart Item",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/cart/item/{{productId}}?size=M",
-              "host": ["{{baseUrl}}"],
-              "path": ["cart", "item", "{{productId}}"],
-              "query": [{ "key": "size", "value": "M" }]
-            },
-            "description": "Remove a specific product+size line from the cart. NOTE: `size` is passed as a QUERY param, not in the body."
-          }
-        },
-        {
-          "name": "Clear Cart",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/cart",
-              "host": ["{{baseUrl}}"],
-              "path": ["cart"]
-            },
-            "description": "Empty the cart."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Orders",
-      "item": [
-        {
-          "name": "Get My Orders",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/orders",
-              "host": ["{{baseUrl}}"],
-              "path": ["orders"]
-            },
-            "description": "List the authenticated user's orders (newest first)."
-          }
-        },
-        {
-          "name": "Get Single Order",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/orders/{{orderId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["orders", "{{orderId}}"]
-            },
-            "description": "Get one order by id. Owner or admin only."
-          }
-        },
-        {
-          "name": "Create Order",
+            "description": "OPTIONAL: select an image file in the 'images' field first (Body > form-data). Skipped by the runner if no file is chosen (will return 400)."
+          },
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const res = pm.response.json();",
-                  "if (res && res.success && res.data && res.data._id) {",
-                  "  pm.collectionVariables.set('orderId', res.data._id);",
-                  "}"
+                  "pm.test(\"Status is 201 or 400\", () => pm.expect(pm.response.code).to.be.oneOf([201,400]));",
+                  "if (pm.response.code < 300) { pm.environment.set(\"uploadedProductId\", pm.response.json().data._id); console.log(\"uploadedProductId =\", pm.environment.get(\"uploadedProductId\")); }"
                 ]
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"shippingAddress\": {\n    \"type\": \"home\",\n    \"street\": \"123 Main St\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"zipCode\": \"10001\",\n    \"country\": \"USA\"\n  },\n  \"paymentMethod\": \"cash\",\n  \"notes\": \"Leave at the door\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/orders",
-              "host": ["{{baseUrl}}"],
-              "path": ["orders"]
-            },
-            "description": "Create an order from the current cart. Verifies stock, reduces stock, and (for non-stripe payment) clears the cart. `paymentMethod` can be `cash` or `stripe`."
-          }
+          ]
         },
         {
-          "name": "Update Order Status (Admin)",
+          "name": "2.5 Update Product (Admin)",
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"orderStatus\": \"shipped\",\n  \"paymentStatus\": \"paid\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/orders/{{orderId}}/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["orders", "{{orderId}}", "status"]
-            },
-            "description": "Update order/payment status (admin only). Setting orderStatus to `delivered` stamps deliveredAt."
-          }
-        },
-        {
-          "name": "Get All Orders (Admin)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/orders/admin/all?page=1&limit=20&status=",
-              "host": ["{{baseUrl}}"],
-              "path": ["orders", "admin", "all"],
-              "query": [
-                { "key": "page", "value": "1" },
-                { "key": "limit", "value": "20" },
-                { "key": "status", "value": "", "description": "Optional orderStatus filter (e.g. pending, shipped, delivered)" }
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
               ]
             },
-            "description": "List all orders across users (admin only), paginated."
-          }
-        }
-      ]
-    },
-    {
-      "name": "Addresses",
-      "item": [
-        {
-          "name": "Get Addresses",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/addresses",
-              "host": ["{{baseUrl}}"],
-              "path": ["addresses"]
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 89,\n  \"stock\": 50,\n  \"sizes\": [\n    \"M\",\n    \"L\",\n    \"XL\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
-            "description": "List the user's saved addresses (default first)."
-          }
-        },
-        {
-          "name": "Add Address",
+            "url": {
+              "raw": "{{baseUrl}}/products/{{newProductId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{newProductId}}"
+              ]
+            }
+          },
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const res = pm.response.json();",
-                  "if (res && res.success && res.data && res.data._id) {",
-                  "  pm.collectionVariables.set('addressId', res.data._id);",
-                  "}"
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test(\"Price updated\", () => pm.expect(pm.response.json().data.price).to.eql(89));"
                 ]
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "2.6 Create Product as User (expect 403)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"type\": \"home\",\n  \"street\": \"123 Main St\",\n  \"city\": \"New York\",\n  \"state\": \"NY\",\n  \"zipCode\": \"10001\",\n  \"country\": \"USA\",\n  \"isDefault\": true\n}"
+              "raw": "{\n  \"name\": \"x\",\n  \"description\": \"x\",\n  \"price\": 1,\n  \"images\": [\n    \"https://raw.githubusercontent.com/avinashdm/gs-images/main/forever/p_img1.png\"\n  ],\n  \"category\": \"Other\",\n  \"stock\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
-              "raw": "{{baseUrl}}/addresses",
-              "host": ["{{baseUrl}}"],
-              "path": ["addresses"]
-            },
-            "description": "Create a new address. If `isDefault` is true, all other addresses are unset as default."
-          }
-        },
-        {
-          "name": "Update Address",
-          "request": {
-            "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"type\": \"work\",\n  \"street\": \"456 Office Blvd\",\n  \"city\": \"Boston\",\n  \"state\": \"MA\",\n  \"zipCode\": \"02101\",\n  \"country\": \"USA\",\n  \"isDefault\": false\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/addresses/{{addressId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["addresses", "{{addressId}}"]
-            },
-            "description": "Update an address. Owner only."
-          }
-        },
-        {
-          "name": "Delete Address",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/addresses/{{addressId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["addresses", "{{addressId}}"]
-            },
-            "description": "Delete an address. Owner only."
-          }
+              "raw": "{{baseUrl}}/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 403\", () => pm.expect(pm.response.code).to.be.oneOf([403]));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
     {
-      "name": "Wishlist",
+      "name": "3. Addresses",
+      "description": "A user can have multiple addresses; isDefault=true unsets the others.",
       "item": [
         {
-          "name": "Get Wishlist",
+          "name": "3.1 Add Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"Home\",\n  \"street\": \"221B MG Road\",\n  \"city\": \"Bengaluru\",\n  \"state\": \"Karnataka\",\n  \"zipCode\": \"560001\",\n  \"country\": \"India\",\n  \"isDefault\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addresses"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                  "if (pm.response.code < 300) { pm.environment.set(\"addressId\", pm.response.json().data._id); console.log(\"addressId =\", pm.environment.get(\"addressId\")); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.2 Get Addresses",
           "request": {
             "method": "GET",
             "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addresses"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.3 Update Address",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"Work\",\n  \"street\": \"14 Connaught Place, Floor 3\",\n  \"city\": \"New Delhi\",\n  \"state\": \"Delhi\",\n  \"zipCode\": \"110001\",\n  \"country\": \"India\",\n  \"isDefault\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/addresses/{{addressId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addresses",
+                "{{addressId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Wishlist",
+      "description": "Toggle adds if missing, removes if present.",
+      "item": [
+        {
+          "name": "4.1 Get Wishlist",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "url": {
               "raw": "{{baseUrl}}/wishlist",
-              "host": ["{{baseUrl}}"],
-              "path": ["wishlist"]
-            },
-            "description": "Get the user's wishlist products."
-          }
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlist"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
         },
         {
-          "name": "Toggle Wishlist",
+          "name": "4.2 Toggle Wishlist (add)",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"productId\": \"{{productId}}\"\n}"
+              "raw": "{\n  \"productId\": \"{{productId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/wishlist/toggle",
-              "host": ["{{baseUrl}}"],
-              "path": ["wishlist", "toggle"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlist",
+                "toggle"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.3 Toggle Wishlist (add 2nd)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
             },
-            "description": "Add the product if not present, otherwise remove it."
-          }
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId2}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlist/toggle",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlist",
+                "toggle"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.4 Toggle Wishlist (remove 2nd)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId2}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlist/toggle",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlist",
+                "toggle"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
     {
-      "name": "Admin",
+      "name": "5. Cart",
+      "description": "Cart items are matched by productId + size.",
       "item": [
         {
-          "name": "Dashboard Stats (Admin)",
+          "name": "5.1 Get Cart",
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/admin/stats",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "stats"]
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
             },
-            "description": "Dashboard totals and recent orders (admin only)."
-          }
+            "url": {
+              "raw": "{{baseUrl}}/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.2 Add To Cart (product 1, size M x2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 2,\n  \"size\": \"M\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cart/add",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart",
+                "add"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.3 Add To Cart (product 2, size S x1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId2}}\",\n  \"quantity\": 1,\n  \"size\": \"S\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cart/add",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart",
+                "add"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.4 Update Cart Item Quantity",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 3,\n  \"size\": \"M\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cart/item/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart",
+                "item",
+                "{{productId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.5 Remove Cart Item",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cart/item/{{productId2}}?size=S",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart",
+                "item",
+                "{{productId2}}"
+              ],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "S"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.6 Add To Cart Insufficient Stock (expect 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 100000,\n  \"size\": \"M\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cart/add",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart",
+                "add"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.expect(pm.response.code).to.be.oneOf([400]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.7 Get Cart (final)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test(\"Cart has items\", () => pm.expect(pm.response.json().data.items.length).to.be.above(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.8 Clear Cart (optional - skip in flow)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart"
+              ]
+            },
+            "description": "Empties the cart. Run AFTER placing the order, or the order step will fail with 'Cart is empty'."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
     {
-      "name": "Payments",
+      "name": "6. Orders",
+      "description": "Order is built from the current cart. Re-run 5.2 before creating another order.",
       "item": [
         {
-          "name": "Create Checkout Session",
+          "name": "6.0 Re-add item to cart",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"items\": [\n    {\n      \"product\": {\n        \"name\": \"Classic T-Shirt\",\n        \"images\": [\"https://res.cloudinary.com/.../shirt.jpg\"]\n      },\n      \"price\": 29.99,\n      \"quantity\": 2\n    }\n  ],\n  \"shipping\": 2,\n  \"orderId\": \"{{orderId}}\",\n  \"success_url\": \"https://success.com\",\n  \"cancel_url\": \"https://cancel.com\"\n}"
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"quantity\": 2,\n  \"size\": \"M\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cart/add",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart",
+                "add"
+              ]
+            },
+            "description": "Makes sure the cart isn't empty (5.8 clears it)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.1 Create Order (Cash)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shippingAddress\": {\n    \"street\": \"14 Connaught Place, Floor 3\",\n    \"city\": \"New Delhi\",\n    \"state\": \"Delhi\",\n    \"zipCode\": \"110001\",\n    \"country\": \"India\"\n  },\n  \"paymentMethod\": \"cash\",\n  \"notes\": \"Please deliver between 10am-6pm\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                  "if (pm.response.code < 300) { pm.environment.set(\"orderId\", pm.response.json().data._id); console.log(\"orderId =\", pm.environment.get(\"orderId\")); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.2 Get My Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.3 Get Single Order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.4 Create Order With Empty Cart (expect 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shippingAddress\": {\n    \"street\": \"x\",\n    \"city\": \"x\",\n    \"state\": \"x\",\n    \"zipCode\": \"1\",\n    \"country\": \"x\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.expect(pm.response.code).to.be.oneOf([400]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. Admin",
+      "description": "Requires adminToken.",
+      "item": [
+        {
+          "name": "7.1 Update Order Status -> shipped",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderStatus\": \"shipped\",\n  \"paymentStatus\": \"pending\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "status"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.2 Update Order Status -> delivered + paid",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderStatus\": \"delivered\",\n  \"paymentStatus\": \"paid\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "status"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.3 Get All Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/admin/all?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "admin",
+                "all"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.4 Get All Orders (filter status=delivered)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/admin/all?page=1&limit=20&status=delivered",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "admin",
+                "all"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "delivered"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.5 Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "stats"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.6 Dashboard Stats as User (expect 403)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "stats"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 403\", () => pm.expect(pm.response.code).to.be.oneOf([403]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8. Payments (Stripe test mode)",
+      "description": "Only mounted when STRIPE_SECRET_KEY is set. Open the returned url to pay with card 4242 4242 4242 4242.",
+      "item": [
+        {
+          "name": "8.1 Create Checkout Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"product\": {\n        \"name\": \"Men Round Neck Pure Cotton T-shirt\",\n        \"images\": [\n          \"https://raw.githubusercontent.com/avinashdm/gs-images/main/forever/p_img2_1.png\"\n        ]\n      },\n      \"price\": 80,\n      \"quantity\": 1\n    }\n  ],\n  \"shipping\": 2,\n  \"orderId\": \"{{orderId}}\",\n  \"success_url\": \"https://example.com/success\",\n  \"cancel_url\": \"https://example.com/cancel\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/payments/checkout-session",
-              "host": ["{{baseUrl}}"],
-              "path": ["payments", "checkout-session"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "checkout-session"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test(\"Has checkout url\", () => pm.expect(pm.response.json().url).to.include(\"stripe.com\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "9. Cleanup",
+      "description": "Deletes the test data this run created (keeps the seeded dummy data).",
+      "item": [
+        {
+          "name": "9.1 Delete Address",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
             },
-            "description": "Create a Stripe Checkout session. Returns `{ id, url }`. Only mounted when STRIPE_SECRET_KEY is configured on the server."
-          }
+            "url": {
+              "raw": "{{baseUrl}}/addresses/{{addressId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addresses",
+                "{{addressId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9.2 Delete Product (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/{{newProductId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{newProductId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9.3 Clear Cart",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
         }
       ]
     }

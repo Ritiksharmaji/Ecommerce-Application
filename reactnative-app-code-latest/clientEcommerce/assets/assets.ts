@@ -1063,11 +1063,7 @@ export const dummyUser = {
             emailAddress: "john@example.com",
         },
     ],
-    clerkId: "user_396E235",
     role: "admin",
-    publicMetadata: {
-        role: "admin",
-    },
 };
 
 export const dummyCart = {

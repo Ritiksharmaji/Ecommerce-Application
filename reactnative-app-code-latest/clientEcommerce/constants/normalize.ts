@@ -11,7 +11,8 @@ export const normalizeProduct = (p: any): Product => ({
     description: p?.description ?? "",
     price: Number(p?.price ?? 0),
     comparePrice: p?.comparePrice != null ? Number(p.comparePrice) : undefined,
-    images: Array.isArray(p?.images) ? p.images : [],
+    // Products created by the previous web backend store images in `image`
+    images: Array.isArray(p?.images) && p.images.length ? p.images : Array.isArray(p?.image) ? p.image : [],
     sizes: Array.isArray(p?.sizes) ? p.sizes : [],
     category: p?.category ?? "",
     stock: typeof p?.stock === "number" ? p.stock : 0,

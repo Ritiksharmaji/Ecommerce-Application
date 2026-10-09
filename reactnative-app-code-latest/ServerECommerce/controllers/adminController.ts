@@ -2,6 +2,7 @@ import User from "../models/User.js";
 import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 import { Request, Response } from "express";
+import { findLegacyOrders } from "../utils/legacyOrders.js";
 
 // Get dashboard stats
 // GET /api/admin/stats
@@ -11,11 +12,13 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         const totalProducts = await Product.countDocuments();
         const totalOrders = await Order.countDocuments();
 
-        const validOrders = await Order.find({ orderStatus: { $ne: "cancelled" } });
-        // Older orders in the database (from the previous web backend) have no totalAmount
-        const totalRevenue = validOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+        // Include orders created by the previous web backend (see utils/legacyOrders.ts)
+        const current = (await Order.find({ user: { $exists: true } }).populate("user", "name email")).map((o) => o.toObject());
+        const legacy = await findLegacyOrders();
+        const allOrders: any[] = [...current, ...legacy].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-        const recentOrders = await Order.find().sort("-createdAt").limit(5).populate("user", "name email");
+        const totalRevenue = allOrders.filter((o) => o.orderStatus !== "cancelled").reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+        const recentOrders = allOrders.slice(0, 5);
 
         res.json({
             success: true,

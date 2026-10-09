@@ -2,7 +2,7 @@ import { Product, WishlistContextType } from "@/constants/types";
 import api, { fetchAllProducts } from "@/constants/api";
 import { normalizeProducts } from "@/constants/normalize";
 import { useAuth } from "@/context/AuthContext";
-import * as SecureStore from "expo-secure-store";
+import { storage } from "@/constants/storage";
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import Toast from "react-native-toast-message";
 
@@ -19,7 +19,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
     const readGuestIds = async (): Promise<string[]> => {
         try {
-            const stored = await SecureStore.getItemAsync(WISHLIST_KEY);
+            const stored = await storage.getItem(WISHLIST_KEY);
             return stored ? JSON.parse(stored) : [];
         } catch {
             return [];
@@ -28,7 +28,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
     const writeGuestIds = async (products: Product[]) => {
         try {
-            await SecureStore.setItemAsync(WISHLIST_KEY, JSON.stringify(products.map((p) => p._id)));
+            await storage.setItem(WISHLIST_KEY, JSON.stringify(products.map((p) => p._id)));
         } catch {
             // ignore persistence failures
         }
@@ -47,7 +47,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
                     const res = await api.post("/api/wishlist/toggle", { productId }).catch(() => null);
                     if (res?.data?.data) products = normalizeProducts(res.data.data);
                 }
-                if (guestIds.length) await SecureStore.deleteItemAsync(WISHLIST_KEY);
+                if (guestIds.length) await storage.removeItem(WISHLIST_KEY);
                 setWishlist(products);
             } else if (guestIds.length === 0) {
                 setWishlist([]);

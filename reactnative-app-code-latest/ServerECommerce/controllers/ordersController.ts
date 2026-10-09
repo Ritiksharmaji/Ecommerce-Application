@@ -1,7 +1,11 @@
+import mongoose from "mongoose";
 import Order from "../models/Order.js";
 import Cart from "../models/Cart.js";
 import Product from "../models/Product.js";
 import { Request, Response } from "express";
+import { findLegacyOrders, findLegacyOrderById, isLegacyOrder, updateLegacyOrderStatus } from "../utils/legacyOrders.js";
+
+const byNewest = (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
 
 // Get user orders
 // GET /api/orders
@@ -10,10 +14,12 @@ export const getOrders = async (req: Request, res: Response) => {
         const query = { user: req.user._id };
 
         const orders = await Order.find(query).populate("items.product", "name images").sort("-createdAt");
+        // Include orders this user placed through the previous web backend
+        const legacy = await findLegacyOrders({ userId: req.user._id.toString() });
 
         res.json({
             success: true,
-            data: orders,
+            data: [...orders.map((o) => o.toObject()), ...legacy].sort(byNewest),
         });
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });
@@ -24,13 +30,14 @@ export const getOrders = async (req: Request, res: Response) => {
 // GET /api/orders/:id
 export const getOrder = async (req: Request, res: Response) => {
     try {
-        const order = await Order.findById(req.params.id).populate("items.product", "name images");
+        const order: any = (await Order.findOne({ _id: req.params.id, user: { $exists: true } }).populate("items.product", "name images")) ?? (await findLegacyOrderById(String(req.params.id)));
 
         if (!order) {
             return res.status(404).json({ success: false, message: "Order not found" });
         }
 
-        if (order.user.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+        const ownerId = (order.user?._id ?? order.user).toString();
+        if (ownerId !== req.user._id.toString() && req.user.role !== "admin") {
             return res.status(403).json({ success: false, message: "Not authorized" });
         }
 
@@ -115,6 +122,14 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     try {
         const { orderStatus, paymentStatus } = req.body;
 
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(404).json({ success: false, message: "Order not found" });
+        }
+        const raw = await Order.collection.findOne({ _id: new mongoose.Types.ObjectId(String(req.params.id)) });
+        if (isLegacyOrder(raw)) {
+            return res.json({ success: true, data: await updateLegacyOrderStatus(String(req.params.id), orderStatus, paymentStatus) });
+        }
+
         const order = await Order.findById(req.params.id);
         if (!order) {
             return res.status(404).json({ success: false, message: "Order not found" });
@@ -137,17 +152,17 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
 export const getAllOrders = async (req: Request, res: Response) => {
     try {
         const { page = 1, limit = 20, status } = req.query;
-        const query: any = {};
+        const query: any = { user: { $exists: true } };
 
         if (status) query.orderStatus = status;
 
-        const total = await Order.countDocuments(query);
-        const orders = await Order.find(query)
-            .populate("user", "name email")
-            .populate("items.product", "name")
-            .sort("-createdAt")
-            .skip((Number(page) - 1) * Number(limit))
-            .limit(Number(limit));
+        // New orders + orders from the previous web backend, merged and paginated together
+        const current = await Order.find(query).populate("user", "name email").populate("items.product", "name");
+        const legacy = (await findLegacyOrders()).filter((o) => !status || o.orderStatus === status);
+        const all = [...current.map((o) => o.toObject()), ...legacy].sort(byNewest);
+        const total = all.length;
+        const start = (Number(page) - 1) * Number(limit);
+        const orders = all.slice(start, start + Number(limit));
 
         res.json({
             success: true,

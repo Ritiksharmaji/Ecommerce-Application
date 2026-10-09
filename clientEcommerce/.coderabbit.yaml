@@ -1,7 +1,0 @@
-reviews:
-  auto_review:
-    enabled: true
-    branches:
-      - "*"
-
-  review_status: false

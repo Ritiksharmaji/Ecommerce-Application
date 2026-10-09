@@ -9,7 +9,8 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function Profile() {
     const router = useRouter();
-    const { user, signOut } = useAuth();
+    const { user, signOut, isAdmin } = useAuth();
+    const menu = PROFILE_MENU.filter((item) => !item.adminOnly || isAdmin);
 
     const handleLogout = async () => {
         await signOut();
@@ -55,11 +56,11 @@ export default function Profile() {
 
                         {/* Menu */}
                         <View className="bg-white rounded-xl border border-gray-100/75 p-2 mb-4">
-                            {PROFILE_MENU.map((item, index) => (
+                            {menu.map((item, index) => (
                                 <TouchableOpacity
                                     key={item.id}
                                     onPress={() => router.push(item.route as any)}
-                                    className={`flex-row items-center p-4 ${index !== PROFILE_MENU.length - 1 ? "border-b border-gray-100" : ""}`}
+                                    className={`flex-row items-center p-4 ${index !== menu.length - 1 ? "border-b border-gray-100" : ""}`}
                                 >
                                     <View className="w-10 h-10 bg-surface rounded-full items-center justify-center mr-4">
                                         <Ionicons name={item.icon as any} size={20} color={COLORS.primary} />

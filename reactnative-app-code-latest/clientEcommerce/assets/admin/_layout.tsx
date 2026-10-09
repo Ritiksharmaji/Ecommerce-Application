@@ -11,7 +11,7 @@ export default function AdminLayout() {
     const router = useRouter();
 
     useEffect(() => {
-        if (isLoaded && (!user || user.publicMetadata?.role !== "admin")) {
+        if (isLoaded && (!user || user.role !== "admin")) {
             router.replace("/(tabs)");
         }
     }, [isLoaded, user]);
@@ -24,7 +24,7 @@ export default function AdminLayout() {
         );
     }
 
-    if (!user || user.publicMetadata?.role !== "admin") return null;
+    if (!user || user.role !== "admin") return null;
 
     return (
         <Tabs

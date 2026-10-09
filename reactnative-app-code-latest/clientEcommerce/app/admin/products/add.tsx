@@ -5,13 +5,11 @@ import Toast from 'react-native-toast-message';
 import { COLORS } from "@/constants";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { CATEGORIES, SUBCATEGORIES } from "@/constants";
+import { CATEGORIES } from "@/constants";
 import api from "@/constants/api";
-import { useAuth } from "@/context/AuthContext";
 
 export default function AddProduct() {
     const router = useRouter();
-    const { adminToken } = useAuth();
 
     const [submitting, setSubmitting] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
@@ -20,8 +18,9 @@ export default function AddProduct() {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
     const [price, setPrice] = useState("");
+    const [comparePrice, setComparePrice] = useState("");
+    const [stock, setStock] = useState("");
     const [category, setCategory] = useState("Men");
-    const [subCategory, setSubCategory] = useState(SUBCATEGORIES[0]);
     const [sizes, setSizes] = useState("");
     const [images, setImages] = useState<string[]>([]);
     const [isFeatured, setIsFeatured] = useState(false);
@@ -41,9 +40,9 @@ export default function AddProduct() {
         }
     };
 
-    // Add Product -> POST /api/product/add (multipart, like the web admin)
+    // Add Product -> POST /api/products (multipart; images go to Cloudinary)
     const handleSubmit = async () => {
-        if (!name || !price || !category || sizes.length < 1) {
+        if (!name || !description || !price || !stock || !category) {
             Toast.show({ type: "error", text1: "Missing Fields", text2: "Please fill in all required fields" });
             return;
         }
@@ -63,22 +62,23 @@ export default function AddProduct() {
             formData.append("name", name);
             formData.append("description", description);
             formData.append("price", price);
+            if (comparePrice) formData.append("comparePrice", comparePrice);
+            formData.append("stock", stock);
             formData.append("category", category);
-            formData.append("subCategory", subCategory);
-            formData.append("bestseller", isFeatured ? "true" : "false");
+            formData.append("isFeatured", isFeatured ? "true" : "false");
             formData.append("sizes", JSON.stringify(sizesArray));
 
-            // web backend reads image1..image4
-            images.slice(0, 4).forEach((uri, i) => {
-                formData.append(`image${i + 1}`, {
+            // backend reads up to 5 files from the `images` field
+            images.slice(0, 5).forEach((uri, i) => {
+                formData.append("images", {
                     uri,
                     name: `image${i + 1}.jpg`,
                     type: "image/jpeg",
                 } as any);
             });
 
-            const { data } = await api.post("/api/product/add", formData, {
-                headers: { token: adminToken, "Content-Type": "multipart/form-data" },
+            const { data } = await api.post("/api/products", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
             });
 
             if (!data?.success) throw new Error(data?.message || "Could not add product");
@@ -116,6 +116,30 @@ export default function AddProduct() {
                     keyboardType="decimal-pad"
                     value={price}
                     onChangeText={setPrice}
+                />
+
+                {/* COMPARE PRICE */}
+                <Text className="text-secondary text-xs font-bold mb-1 uppercase">
+                    Compare Price ($)
+                </Text>
+                <TextInput
+                    className="bg-surface p-3 rounded-lg mb-4 text-primary"
+                    placeholder="Original price (optional)"
+                    keyboardType="decimal-pad"
+                    value={comparePrice}
+                    onChangeText={setComparePrice}
+                />
+
+                {/* STOCK */}
+                <Text className="text-secondary text-xs font-bold mb-1 uppercase">
+                    Stock *
+                </Text>
+                <TextInput
+                    className="bg-surface p-3 rounded-lg mb-4 text-primary"
+                    placeholder="e.g. 50"
+                    keyboardType="number-pad"
+                    value={stock}
+                    onChangeText={setStock}
                 />
 
                 {/* CATEGORY */}
@@ -174,22 +198,6 @@ export default function AddProduct() {
                     </TouchableWithoutFeedback>
                 </Modal>
 
-                {/* SUB-CATEGORY (Type) */}
-                <Text className="text-secondary text-xs font-bold mb-1 uppercase">
-                    Type
-                </Text>
-                <View className="flex-row flex-wrap gap-2 mb-4">
-                    {SUBCATEGORIES.map((sub) => (
-                        <TouchableOpacity
-                            key={sub}
-                            onPress={() => setSubCategory(sub)}
-                            className={`px-4 py-2 rounded-full border ${subCategory === sub ? "bg-primary border-primary" : "bg-surface border-gray-200"}`}
-                        >
-                            <Text className={subCategory === sub ? "text-white" : "text-primary"}>{sub}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-
                 {/* SIZES */}
                 <Text className="text-secondary text-xs font-bold mb-1 uppercase">
                     Sizes (comma separated)
@@ -233,7 +241,7 @@ export default function AddProduct() {
 
                 {/* DESCRIPTION */}
                 <Text className="text-secondary text-xs font-bold mb-1 uppercase">
-                    Description
+                    Description *
                 </Text>
                 <TextInput
                     className="bg-surface p-3 rounded-lg mb-6 text-primary h-24"

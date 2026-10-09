@@ -1,49 +1,46 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ScrollView, Text, TextInput, TouchableOpacity, View, ActivityIndicator, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import Header from "@/components/Header";
 import { COLORS, CURRENCY, DELIVERY_FEE } from "@/constants";
+import type { Address } from "@/constants/types";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/constants/api";
 import Toast from "react-native-toast-message";
 
-// Stripe Checkout needs an https return URL. The web backend builds it from the
-// request's `origin` header as `${origin}/verify?...`. We send this sentinel origin
-// and intercept navigation to it inside the WebView (it never actually loads).
-const RETURN_ORIGIN = "https://forever-mobile.local";
+// Stripe Checkout needs https success/cancel URLs. We pass these sentinel URLs and
+// intercept navigation to them inside the WebView (they never actually load).
+const SUCCESS_URL = "https://ecommerce-mobile.local/payment-success";
+const CANCEL_URL = "https://ecommerce-mobile.local/payment-cancel";
 
 type AddressForm = {
-    firstName: string;
-    lastName: string;
     street: string;
     city: string;
     state: string;
-    zipcode: string;
+    zipCode: string;
     country: string;
-    phone: string;
 };
 
 const EMPTY_ADDRESS: AddressForm = {
-    firstName: "",
-    lastName: "",
     street: "",
     city: "",
     state: "",
-    zipcode: "",
+    zipCode: "",
     country: "",
-    phone: "",
 };
 
 export default function Checkout() {
     const router = useRouter();
-    const { cartTotal, cartItems, clearCart } = useCart();
+    const { cartTotal, cartItems, clearCart, flush, refreshCart } = useCart();
     const { isSignedIn } = useAuth();
     const [loading, setLoading] = useState(false);
     const [address, setAddress] = useState<AddressForm>(EMPTY_ADDRESS);
+    const [hasSavedAddress, setHasSavedAddress] = useState(false);
+    const [notes, setNotes] = useState("");
     const [paymentMethod, setPaymentMethod] = useState<"cash" | "stripe">("cash");
 
     // Stripe WebView gateway state
@@ -55,46 +52,48 @@ export default function Checkout() {
 
     const set = (key: keyof AddressForm, value: string) => setAddress((prev) => ({ ...prev, [key]: value }));
 
-    const addressValid = address.street && address.city && address.state && address.zipcode && address.country;
+    const addressValid = address.street && address.city && address.state && address.zipCode && address.country;
 
-    // Build the order payload exactly like the web PlaceOrder page does
-    const buildOrderData = () => ({
-        address,
-        items: cartItems.map((it) => ({
-            _id: it.productId,
-            name: it.product.name,
-            price: it.price,
-            quantity: it.quantity,
-            size: it.size,
-            image: it.product.images,
-        })),
-        amount: total,
-    });
+    // Prefill with the user's default saved address (GET /api/addresses, default first)
+    useEffect(() => {
+        if (!isSignedIn) return;
+        api.get("/api/addresses")
+            .then(({ data }) => {
+                const saved: Address | undefined = data?.data?.[0];
+                if (saved) {
+                    const { street, city, state, zipCode, country } = saved;
+                    setAddress({ street, city, state, zipCode, country });
+                    setHasSavedAddress(true);
+                }
+            })
+            .catch(() => {});
+    }, [isSignedIn]);
 
-    // Stripe redirects to ${RETURN_ORIGIN}/verify?success=..&orderId=.. — confirm with backend.
-    const verifyStripePayment = async (success: string | null, orderId: string | null) => {
-        try {
-            const { data } = await api.post("/api/order/verifyStripe", { success, orderId });
-            if (data?.success) {
-                clearCart();
-                Toast.show({ type: "success", text1: "Payment successful", text2: "Your order is confirmed" });
-                router.replace("/orders");
-            } else {
-                Toast.show({ type: "error", text1: "Payment cancelled", text2: "Your order was not completed" });
-                router.replace("/(tabs)/cart");
-            }
-        } catch (e: any) {
-            Toast.show({ type: "error", text1: "Verification failed", text2: e?.message ?? "Try again" });
-        }
+    // First order: remember the address for next time
+    const saveAddressIfNew = async () => {
+        if (hasSavedAddress) return;
+        await api.post("/api/addresses", { type: "Home", ...address, isDefault: true }).catch(() => {});
+        setHasSavedAddress(true);
     };
 
-    // Sync decision for the WebView: block the sentinel return URL, allow real Stripe pages.
+    // Stripe returns to SUCCESS_URL / CANCEL_URL. The webhook (POST /api/stripe) marks the
+    // order paid and clears the server cart; we clear the local cart on success too.
     const handleGatewayNavigation = (url: string): boolean => {
-        if (!url.startsWith(`${RETURN_ORIGIN}/verify`)) return true;
-        const params = new URLSearchParams(url.split("?")[1] || "");
-        setGatewayUrl(null);
-        verifyStripePayment(params.get("success"), params.get("orderId"));
-        return false;
+        if (url.startsWith(SUCCESS_URL)) {
+            setGatewayUrl(null);
+            clearCart();
+            Toast.show({ type: "success", text1: "Payment successful", text2: "Your order is confirmed" });
+            router.replace("/orders");
+            return false;
+        }
+        if (url.startsWith(CANCEL_URL)) {
+            setGatewayUrl(null);
+            refreshCart();
+            Toast.show({ type: "error", text1: "Payment cancelled", text2: "Your order is awaiting payment" });
+            router.replace("/orders");
+            return false;
+        }
+        return true;
     };
 
     const handlePlaceOrder = async () => {
@@ -114,23 +113,35 @@ export default function Checkout() {
 
         setLoading(true);
         try {
+            // The order is built from the server cart, so wait for pending cart updates first
+            await flush();
+
+            // POST /api/orders -> creates the order from the cart and reduces stock.
+            // For cash orders the server clears the cart; for stripe it's cleared by the webhook.
+            const { data } = await api.post("/api/orders", { shippingAddress: address, paymentMethod, notes });
+            const order = data.data;
+            await saveAddressIfNew();
+
             if (paymentMethod === "stripe") {
-                // POST /api/order/stripe -> { success, session_url }. We pass `origin` so the
-                // backend builds a return URL we can intercept in the WebView.
-                const { data } = await api.post("/api/order/stripe", buildOrderData(), {
-                    headers: { origin: RETURN_ORIGIN },
+                // POST /api/payments/checkout-session -> { id, url }
+                const session = await api.post("/api/payments/checkout-session", {
+                    items: cartItems.map((it) => ({
+                        product: { name: it.product.name, images: it.product.images },
+                        price: it.price,
+                        quantity: it.quantity,
+                    })),
+                    shipping: order.shippingCost,
+                    orderId: order._id,
+                    success_url: SUCCESS_URL,
+                    cancel_url: CANCEL_URL,
                 });
-                if (!data?.success) throw new Error(data?.message || "Could not start payment");
-                setGatewayUrl(data.session_url);
+                if (!session.data?.url) throw new Error(session.data?.error || "Could not start payment");
+                setGatewayUrl(session.data.url);
                 return;
             }
 
-            // COD order: POST /api/order/place -> clears server cart on success
-            const { data } = await api.post("/api/order/place", buildOrderData());
-            if (!data?.success) throw new Error(data?.message || "Could not place order");
-
             clearCart();
-            Toast.show({ type: "success", text1: "Order placed", text2: "Thank you for your purchase!" });
+            Toast.show({ type: "success", text1: "Order placed", text2: `Order #${order.orderNumber}` });
             router.replace("/orders");
         } catch (e: any) {
             Toast.show({ type: "error", text1: "Order failed", text2: e?.message ?? "Something went wrong" });
@@ -159,20 +170,26 @@ export default function Checkout() {
             <ScrollView className="flex-1 px-4 mt-4" keyboardShouldPersistTaps="handled">
                 {/* Address Section */}
                 <Text className="text-lg font-bold text-primary mb-4">Shipping Address</Text>
-                <View className="flex-row gap-3">
-                    <View className="flex-1">{field("First Name", address.firstName, "firstName")}</View>
-                    <View className="flex-1">{field("Last Name", address.lastName, "lastName")}</View>
-                </View>
                 {field("Street", address.street, "street")}
                 <View className="flex-row gap-3">
                     <View className="flex-1">{field("City", address.city, "city")}</View>
                     <View className="flex-1">{field("State", address.state, "state")}</View>
                 </View>
                 <View className="flex-row gap-3">
-                    <View className="flex-1">{field("Zip Code", address.zipcode, "zipcode", "numeric")}</View>
+                    <View className="flex-1">{field("Zip Code", address.zipCode, "zipCode", "numeric")}</View>
                     <View className="flex-1">{field("Country", address.country, "country")}</View>
                 </View>
-                {field("Phone", address.phone, "phone", "phone-pad")}
+
+                <View className="mb-3">
+                    <Text className="text-secondary text-xs mb-1">Delivery notes (optional)</Text>
+                    <TextInput
+                        className="bg-white px-4 py-3 rounded-xl border border-gray-100 text-primary"
+                        value={notes}
+                        onChangeText={setNotes}
+                        placeholder="e.g. Leave at the front door"
+                        placeholderTextColor="#999"
+                    />
+                </View>
 
                 {/* Payment Section */}
                 <Text className="text-lg font-bold text-primary mb-4 mt-2">Payment Method</Text>
@@ -230,7 +247,7 @@ export default function Checkout() {
                 <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
                     <View className="flex-row justify-between items-center p-4 border-b border-gray-100">
                         <Text className="text-lg font-bold text-primary">Secure Payment</Text>
-                        <TouchableOpacity onPress={() => setGatewayUrl(null)}>
+                        <TouchableOpacity onPress={() => handleGatewayNavigation(CANCEL_URL)}>
                             <Ionicons name="close" size={24} color={COLORS.primary} />
                         </TouchableOpacity>
                     </View>

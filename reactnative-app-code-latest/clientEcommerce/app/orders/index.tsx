@@ -21,8 +21,8 @@ export default function Orders() {
 
     const fetchOrders = async () => {
         try {
-            const { data } = await api.post("/api/order/userorders", {});
-            if (data?.success) setOrders(normalizeOrders(data.orders));
+            const { data } = await api.get("/api/orders");
+            if (data?.success) setOrders(normalizeOrders(data.data));
         } catch (error) {
             console.error("Error fetching orders:", error);
         } finally {

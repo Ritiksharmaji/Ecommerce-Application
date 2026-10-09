@@ -3,22 +3,20 @@ import React, { useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View, ActivityIndicator, RefreshControl, Image, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/constants";
-import api from "@/constants/api";
-import { normalizeProducts } from "@/constants/normalize";
-import { useAuth } from "@/context/AuthContext";
+import api, { fetchAllProducts } from "@/constants/api";
 import Toast from "react-native-toast-message";
 
 export default function AdminProducts() {
     const router = useRouter();
-    const { adminToken } = useAuth();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [products, setProducts] = useState([]);
 
     const fetchProducts = async () => {
         try {
-            const { data } = await api.get("/api/product/list");
-            if (data?.success) setProducts(normalizeProducts(data.products).reverse() as any);
+            const list = await fetchAllProducts();
+            list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setProducts(list as any);
         } catch (e) {
             console.error("Error fetching products:", e);
         } finally {
@@ -38,7 +36,7 @@ export default function AdminProducts() {
 
     const performDelete = async (id: string) => {
         try {
-            const { data } = await api.post("/api/product/remove", { id }, { headers: { token: adminToken } });
+            const { data } = await api.delete(`/api/products/${id}`);
             if (data?.success) {
                 Toast.show({ type: "success", text1: "Product removed" });
                 setProducts((prev: any) => prev.filter((product: any) => product._id !== id));
@@ -105,12 +103,18 @@ export default function AdminProducts() {
 
                             <View className="flex-1">
                                 <Text className="font-bold text-primary text-base" numberOfLines={1}>{product.name}</Text>
-                                <Text className="text-secondary text-xs mb-1" numberOfLines={1}>Category : {product.category || 'Others'}{product.subCategory ? ` · ${product.subCategory}` : ''}</Text>
+                                <Text className="text-secondary text-xs mb-1" numberOfLines={1}>Category : {product.category || 'Other'} · Stock : {product.stock}</Text>
                                 <Text className="text-secondary text-xs mb-1" numberOfLines={1}>Sizes : {product.sizes.join(", ")}</Text>
                                 <Text className="text-primary font-bold">${product.price.toFixed(2)}</Text>
                             </View>
 
-                            <View className="flex-row items-center">
+                            <View className="flex-row items-center gap-2">
+                                <TouchableOpacity
+                                    onPress={() => router.push(`/admin/products/edit/${product._id}`)}
+                                    className="p-2 bg-gray-50 rounded-full"
+                                >
+                                    <Ionicons name="create-outline" size={18} color="#333333" />
+                                </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={() => deleteProduct(product._id)}
                                     className="p-2 bg-gray-50 rounded-full"

@@ -1,5 +1,6 @@
 import { COLORS } from "@/constants";
 import { useAuth } from "@/context/AuthContext";
+import PasswordInput from "@/components/PasswordInput";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, useRouter } from "expo-router";
 import * as React from "react";
@@ -61,14 +62,7 @@ export default function SignInPage() {
             {/* Password */}
             <View className="mb-6">
                 <Text className="text-primary font-medium mb-2">Password</Text>
-                <TextInput
-                    className="w-full bg-surface p-4 rounded-xl text-primary"
-                    placeholder="********"
-                    placeholderTextColor="#999"
-                    secureTextEntry
-                    value={password}
-                    onChangeText={setPassword}
-                />
+                <PasswordInput value={password} onChangeText={setPassword} />
             </View>
 
             {/* Submit */}

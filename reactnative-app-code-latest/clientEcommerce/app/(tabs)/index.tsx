@@ -16,8 +16,7 @@ import CategoryItem from "@/components/CategoryItem";
 import { router } from "expo-router";
 import ProductCard from "@/components/ProductCard";
 import { Product } from "@/constants/types";
-import api from "@/constants/api";
-import { normalizeProducts } from "@/constants/normalize";
+import { fetchAllProducts } from "@/constants/api";
 import Toast from "react-native-toast-message";
 
 const { width } = Dimensions.get("window");
@@ -27,11 +26,10 @@ export default function Home() {
   const [products, setProducts] = useState<Product[]>([])
   const[loading, setLoading] = useState(true);
 
-  // to load the products from the web backend
+  // to load the products from the backend
   const fetchProducts = async()=>{
       try {
-        const { data } = await api.get("/api/product/list");
-        if (data?.success) setProducts(normalizeProducts(data.products));
+        setProducts(await fetchAllProducts());
       } catch (e) {
         console.error("Error fetching products:", e);
       } finally {
@@ -48,7 +46,7 @@ export default function Home() {
     ...CATEGORIES,
   ];
 
-  // Mirror the web home: Latest Collection (newest) + Best Seller (bestseller).
+  // Latest Collection (newest) + Best Seller (featured products).
   const latestProducts = [...products]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 10);

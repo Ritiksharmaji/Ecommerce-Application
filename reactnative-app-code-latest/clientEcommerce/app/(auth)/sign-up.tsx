@@ -5,6 +5,7 @@ import Toast from "react-native-toast-message";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, Link } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
+import PasswordInput from "@/components/PasswordInput";
 import { COLORS } from "@/constants";
 
 export default function SignUpScreen() {
@@ -88,14 +89,7 @@ export default function SignUpScreen() {
             {/* Password */}
             <View className="mb-6">
                 <Text className="text-primary font-medium mb-2">Password</Text>
-                <TextInput
-                    className="w-full bg-surface p-4 rounded-xl text-primary"
-                    placeholder="********"
-                    placeholderTextColor="#999"
-                    secureTextEntry
-                    value={password}
-                    onChangeText={setPassword}
-                />
+                <PasswordInput value={password} onChangeText={setPassword} />
             </View>
 
             {/* Submit */}

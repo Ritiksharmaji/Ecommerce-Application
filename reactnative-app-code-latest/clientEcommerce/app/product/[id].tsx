@@ -28,9 +28,9 @@ export default function ProductDetails() {
     const fetchProduct = async () => {
         const productId = Array.isArray(id) ? id[0] : id;
         try {
-            const { data } = await api.post("/api/product/single", { productId });
-            if (data?.success && data.product) {
-                setProduct(normalizeProduct(data.product));
+            const { data } = await api.get(`/api/products/${productId}`);
+            if (data?.success && data.data) {
+                setProduct(normalizeProduct(data.data));
             } else {
                 setProduct(null);
             }

@@ -4,11 +4,9 @@ import { COLORS, getStatusColor } from "@/constants";
 import { Ionicons } from "@expo/vector-icons";
 import api from "@/constants/api";
 import { normalizeOrders } from "@/constants/normalize";
-import { useAuth } from "@/context/AuthContext";
 import Toast from "react-native-toast-message";
 
 export default function AdminOrders() {
-    const { adminToken } = useAuth();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [orders, setOrders] = useState([]);
@@ -18,13 +16,13 @@ export default function AdminOrders() {
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
     const [updating, setUpdating] = useState(false);
 
-    // Web backend status values (POST /api/order/status expects these exact strings)
-    const STATUSES = ["Order Placed", "Packing", "Shipped", "Out for delivery", "Delivered"];
+    // Must match the orderStatus enum in ServerECommerce models/Order.ts
+    const STATUSES = ["placed", "processing", "shipped", "delivered", "cancelled"];
 
     const fetchOrders = async () => {
         try {
-            const { data } = await api.post("/api/order/list", {}, { headers: { token: adminToken } });
-            if (data?.success) setOrders(normalizeOrders(data.orders) as any);
+            const { data } = await api.get("/api/orders/admin/all", { params: { page: 1, limit: 100 } });
+            if (data?.success) setOrders(normalizeOrders(data.data) as any);
         } catch (e) {
             console.error("Error fetching orders:", e);
         } finally {
@@ -51,11 +49,7 @@ export default function AdminOrders() {
         if (!selectedOrder) return;
         setUpdating(true);
         try {
-            const { data } = await api.post(
-                "/api/order/status",
-                { orderId: selectedOrder._id, status: newStatus },
-                { headers: { token: adminToken } }
-            );
+            const { data } = await api.put(`/api/orders/${selectedOrder._id}/status`, { orderStatus: newStatus });
             if (data?.success) {
                 await fetchOrders();
             } else {
@@ -91,7 +85,7 @@ export default function AdminOrders() {
                     orders.map((order: any) => (
                         <View key={order._id} className="bg-white p-4 rounded-xl shadow-sm mb-4 border border-gray-100">
                             <View className="flex-row justify-between mb-2">
-                                <Text className="font-medium text-sm text-gray-400 ">Order ID : #{order._id}</Text>
+                                <Text className="font-medium text-sm text-gray-400 ">Order : #{order.orderNumber || order._id}</Text>
                                 <Text className="text-secondary text-xs">{new Date(order.createdAt).toLocaleDateString()}</Text>
                             </View>
 

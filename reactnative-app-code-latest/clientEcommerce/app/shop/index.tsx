@@ -5,10 +5,9 @@ import { ActivityIndicator, FlatList, Modal, ScrollView, Text, TextInput, Toucha
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "@/components/Header";
 import ProductCard from "@/components/ProductCard";
-import { COLORS, CATEGORIES, SUBCATEGORIES } from "@/constants";
+import { COLORS, CATEGORIES } from "@/constants";
 import type { Product } from "@/constants/types";
-import api from "@/constants/api";
-import { normalizeProducts } from "@/constants/normalize";
+import { fetchAllProducts } from "@/constants/api";
 
 const PAGE_SIZE = 10;
 
@@ -22,7 +21,6 @@ export default function Shop() {
     const [appliedSearch, setAppliedSearch] = useState("");
     const [sort, setSort] = useState("-createdAt");
     const [category, setCategory] = useState((params.category as string) || "");
-    const [subCategory, setSubCategory] = useState("");
     const [minPrice, setMinPrice] = useState("");
     const [maxPrice, setMaxPrice] = useState("");
 
@@ -34,8 +32,7 @@ export default function Shop() {
     const fetchProducts = async () => {
         setLoading(true);
         try {
-            const { data } = await api.get("/api/product/list");
-            if (data?.success) setAllProducts(normalizeProducts(data.products));
+            setAllProducts(await fetchAllProducts());
         } catch (error) {
             console.error("Error fetching products:", error);
         } finally {
@@ -55,9 +52,6 @@ export default function Shop() {
         if (category) {
             list = list.filter((p) => (typeof p.category === "string" ? p.category : p.category?.name) === category);
         }
-        if (subCategory) {
-            list = list.filter((p) => p.subCategory === subCategory);
-        }
         if (minPrice) list = list.filter((p) => p.price >= Number(minPrice));
         if (maxPrice) list = list.filter((p) => p.price <= Number(maxPrice));
 
@@ -66,7 +60,7 @@ export default function Shop() {
         else list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         return list;
-    }, [allProducts, appliedSearch, category, subCategory, minPrice, maxPrice, sort]);
+    }, [allProducts, appliedSearch, category, minPrice, maxPrice, sort]);
 
     const products = filtered.slice(0, page * PAGE_SIZE);
     const hasMore = products.length < filtered.length;
@@ -86,7 +80,6 @@ export default function Shop() {
 
     const clearFilters = () => {
         setCategory("");
-        setSubCategory("");
         setMinPrice("");
         setMaxPrice("");
         setSort("-createdAt");
@@ -103,7 +96,7 @@ export default function Shop() {
 
     useEffect(() => {
         setPage(1);
-    }, [sort, category, subCategory, minPrice, maxPrice, appliedSearch]);
+    }, [sort, category, minPrice, maxPrice, appliedSearch]);
 
     return (
         <SafeAreaView className="flex-1 bg-surface" edges={['top']}>
@@ -211,23 +204,6 @@ export default function Shop() {
                                         <Text className={(category === cat.name || (cat.name === 'All' && category === '')) ? "text-white" : "text-primary"}>{cat.name}</Text>
                                     </TouchableOpacity>
                                 ))}
-                            </View>
-
-                            {/* Sub-category (Type) */}
-                            <Text className="font-bold text-primary mb-3">Type</Text>
-                            <View className="flex-row flex-wrap gap-2 mb-6">
-                                {["All", ...SUBCATEGORIES].map((sub) => {
-                                    const active = subCategory === sub || (sub === "All" && subCategory === "");
-                                    return (
-                                        <TouchableOpacity
-                                            key={sub}
-                                            onPress={() => setSubCategory(sub === "All" ? "" : sub)}
-                                            className={`px-4 py-2 rounded-full border ${active ? "bg-primary border-primary" : "bg-white border-gray-100"}`}
-                                        >
-                                            <Text className={active ? "text-white" : "text-primary"}>{sub}</Text>
-                                        </TouchableOpacity>
-                                    );
-                                })}
                             </View>
 
                             {/* Price Range */}

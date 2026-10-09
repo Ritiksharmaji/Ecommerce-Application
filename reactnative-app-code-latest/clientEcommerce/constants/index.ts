@@ -8,23 +8,24 @@ export const COLORS = {
     error: "#FF4444",
 };
 
-// Currency symbol + delivery fee mirror the web frontend (currency '$', delivery_fee 10).
+// DELIVERY_FEE must match the flat shippingCost in ServerECommerce controllers/ordersController.ts
 export const CURRENCY = "$";
-export const DELIVERY_FEE = 10;
+export const DELIVERY_FEE = 2;
 
-// Category / sub-category values MUST match what the web backend stores on a product,
-// otherwise filtering returns nothing. Web uses exactly these.
+// Category values MUST match the `category` enum in ServerECommerce models/Product.ts,
+// otherwise filtering returns nothing.
 export const CATEGORIES = [
     { id: 1, name: "Men", icon: "man-outline" },
     { id: 2, name: "Women", icon: "woman-outline" },
     { id: 3, name: "Kids", icon: "happy-outline" },
+    { id: 4, name: "Shoes", icon: "footsteps-outline" },
+    { id: 5, name: "Bags", icon: "bag-handle-outline" },
+    { id: 6, name: "Other", icon: "pricetag-outline" },
 ];
-
-export const SUBCATEGORIES = ["Topwear", "Bottomwear", "Winterwear"];
 
 export const PROFILE_MENU = [
     { id: 1, title: "My Orders", icon: "receipt-outline", route: "/orders" },
-    { id: 6, title: "Admin Panel", icon: "shield-checkmark-outline", route: "/admin" },
+    { id: 6, title: "Admin Panel", icon: "shield-checkmark-outline", route: "/admin", adminOnly: true },
 ];
 
 export const getStatusColor = (status: string) => {

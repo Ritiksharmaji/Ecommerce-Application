@@ -7,7 +7,7 @@ import Header from "@/components/Header";
 import { COLORS } from "@/constants";
 import type { Order, Product } from "@/constants/types";
 import api from "@/constants/api";
-import { normalizeOrders } from "@/constants/normalize";
+import { normalizeOrder } from "@/constants/normalize";
 
 export default function OrderDetails() {
     const { id } = useLocalSearchParams();
@@ -21,11 +21,8 @@ export default function OrderDetails() {
     const fetchOrderDetails = async () => {
         try {
             const orderId = Array.isArray(id) ? id[0] : id;
-            const { data } = await api.post("/api/order/userorders", {});
-            if (data?.success) {
-                const found = normalizeOrders(data.orders).find((o) => o._id === orderId);
-                setOrder(found || null);
-            }
+            const { data } = await api.get(`/api/orders/${orderId}`);
+            setOrder(data?.success && data.data ? normalizeOrder(data.data) : null);
         } catch (error) {
             console.error("Error fetching order details:", error);
         } finally {

@@ -5,10 +5,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/constants";
 import { useAuth } from "@/context/AuthContext";
+import PasswordInput from "@/components/PasswordInput";
 import Toast from "react-native-toast-message";
 
 export default function AdminLayout() {
-    const { adminToken, adminLogin, adminLogout, isLoaded } = useAuth();
+    const { isAdmin, adminLogin, isLoaded } = useAuth();
     const router = useRouter();
 
     const [email, setEmail] = useState("");
@@ -23,8 +24,8 @@ export default function AdminLayout() {
         );
     }
 
-    // Gate the admin panel behind the admin token (POST /api/user/admin)
-    if (!adminToken) {
+    // Gate the admin panel: only users with role "admin" (e.g. ADMIN_EMAIL from the backend .env)
+    if (!isAdmin) {
         const onLogin = async () => {
             if (!email || !password) return;
             setLoading(true);
@@ -50,7 +51,7 @@ export default function AdminLayout() {
                 >
                     <View className="items-center mb-8">
                         <Text className="text-3xl font-bold text-primary mb-2">Admin Panel</Text>
-                        <Text className="text-secondary">Sign in with admin credentials</Text>
+                        <Text className="text-secondary text-center">Sign in with an admin account</Text>
                     </View>
 
                     <Text className="text-primary font-medium mb-2">Email</Text>
@@ -59,20 +60,14 @@ export default function AdminLayout() {
                         placeholder="admin@example.com"
                         placeholderTextColor="#999"
                         autoCapitalize="none"
+                        autoCorrect={false}
                         keyboardType="email-address"
                         value={email}
                         onChangeText={setEmail}
                     />
 
                     <Text className="text-primary font-medium mb-2">Password</Text>
-                    <TextInput
-                        className="w-full bg-surface p-4 rounded-xl text-primary mb-6"
-                        placeholder="********"
-                        placeholderTextColor="#999"
-                        secureTextEntry
-                        value={password}
-                        onChangeText={setPassword}
-                    />
+                    <PasswordInput value={password} onChangeText={setPassword} className="mb-6" />
 
                     <TouchableOpacity
                         onPress={onLogin}
@@ -97,10 +92,7 @@ export default function AdminLayout() {
                 tabBarInactiveTintColor: "gray",
                 headerRight: () => (
                     <TouchableOpacity
-                        onPress={async () => {
-                            await adminLogout();
-                            router.replace("/(tabs)");
-                        }}
+                        onPress={() => router.replace("/(tabs)")}
                         className="mr-4 flex-row items-center"
                     >
                         <Ionicons name="log-out-outline" size={24} color={COLORS.primary} />

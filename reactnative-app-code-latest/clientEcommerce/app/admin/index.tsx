@@ -4,11 +4,9 @@ import { ScrollView, Text, View, ActivityIndicator, RefreshControl } from "react
 import { COLORS, getStatusColor } from "@/constants";
 import api from "@/constants/api";
 import { normalizeOrders } from "@/constants/normalize";
-import { useAuth } from "@/context/AuthContext";
 
 export default function AdminDashboard() {
     const router = useRouter();
-    const { adminToken } = useAuth();
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [stats, setStats] = useState({
@@ -19,33 +17,13 @@ export default function AdminDashboard() {
         recentOrders: []
     });
 
-    // Web backend has no stats endpoint; derive stats from product + order lists.
+    // GET /api/admin/stats -> { totalUsers, totalProducts, totalOrders, totalRevenue, recentOrders }
     const fetchStats = async () => {
         try {
-            const [prodRes, orderRes] = await Promise.all([
-                api.get("/api/product/list"),
-                api.post("/api/order/list", {}, { headers: { token: adminToken } }),
-            ]);
-
-            const totalProducts = prodRes.data?.success ? prodRes.data.products.length : 0;
-            const rawOrders = orderRes.data?.success ? orderRes.data.orders : [];
-            const orders = normalizeOrders(rawOrders);
-
-            const totalRevenue = rawOrders.reduce((sum: number, o: any) => sum + Number(o.amount || 0), 0);
-            const totalUsers = new Set(rawOrders.map((o: any) => o.userId)).size;
-            const recentOrders = orders.slice(0, 5).map((o) => ({
-                ...o,
-                orderStatus: o.orderStatus,
-                user: { name: "Customer" },
-            }));
-
-            setStats({
-                totalUsers,
-                totalProducts,
-                totalOrders: rawOrders.length,
-                totalRevenue,
-                recentOrders: recentOrders as any,
-            });
+            const { data } = await api.get("/api/admin/stats");
+            if (data?.success) {
+                setStats({ ...data.data, recentOrders: normalizeOrders(data.data.recentOrders) as any });
+            }
         } catch (e) {
             console.error("Error fetching stats:", e);
         } finally {

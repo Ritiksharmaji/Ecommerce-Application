@@ -8,19 +8,22 @@ export const COLORS = {
     error: "#FF4444",
 };
 
+// Currency symbol + delivery fee mirror the web frontend (currency '$', delivery_fee 10).
+export const CURRENCY = "$";
+export const DELIVERY_FEE = 10;
+
+// Category / sub-category values MUST match what the web backend stores on a product,
+// otherwise filtering returns nothing. Web uses exactly these.
 export const CATEGORIES = [
     { id: 1, name: "Men", icon: "man-outline" },
     { id: 2, name: "Women", icon: "woman-outline" },
     { id: 3, name: "Kids", icon: "happy-outline" },
-    { id: 4, name: "Shoes", icon: "footsteps-outline" },
-    { id: 5, name: "Bag", icon: "briefcase-outline" },
-    { id: 6, name: "Other", icon: "grid-outline" },
 ];
+
+export const SUBCATEGORIES = ["Topwear", "Bottomwear", "Winterwear"];
 
 export const PROFILE_MENU = [
     { id: 1, title: "My Orders", icon: "receipt-outline", route: "/orders" },
-    { id: 4, title: "My Reviews", icon: "star-outline", route: "/" },
-    { id: 5, title: "Settings", icon: "settings-outline", route: "/" },
     { id: 6, title: "Admin Panel", icon: "shield-checkmark-outline", route: "/admin" },
 ];
 

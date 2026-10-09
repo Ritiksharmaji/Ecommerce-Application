@@ -4,10 +4,11 @@ import React from "react";
 import { Text, TouchableOpacity, View, Image } from "react-native";
 import { COLORS } from "@/constants";
 import { HeaderProps } from "@/constants/types";
+import { useCart } from "@/context/CartContext";
 
 export default function Header({ title, showBack, showSearch, showCart, showMenu, showLogo }: HeaderProps) {
      const router = useRouter();
-     const {itemCount} = {itemCount:6};
+     const { itemCount } = useCart();
 
     return (
         <View className="flex-row items-center justify-between px-4 py-3 bg-white">
@@ -19,7 +20,7 @@ export default function Header({ title, showBack, showSearch, showCart, showMenu
                 )}
 
                 {showMenu && (
-                    <TouchableOpacity className="mr-3" >
+                    <TouchableOpacity className="mr-3" onPress={() => router.push("/shop")}>
                         <Ionicons name="menu-outline" size={28} color={COLORS.primary} />
                     </TouchableOpacity>
                 )}
@@ -44,7 +45,7 @@ export default function Header({ title, showBack, showSearch, showCart, showMenu
 {/* right side */}
             <View className="flex-row items-center gap-4">
                 {showSearch && (
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={() => router.push("/shop")}>
                         <Ionicons name="search-outline" size={24} color={COLORS.primary} />
                     </TouchableOpacity>
                 )}

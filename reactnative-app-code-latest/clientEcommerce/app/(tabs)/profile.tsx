@@ -31,7 +31,7 @@ export default function Profile() {
                         </View>
                         <Text className="text-primary font-bold text-xl mb-2">Guest User</Text>
                         <Text className="text-secondary text-base mb-8 text-center w-3/4 px-4">
-                            Log in to view your profile, orders, and addresses.
+                            Log in to view your profile and orders.
                         </Text>
                         <TouchableOpacity
                             onPress={() => router.push("/sign-in")}

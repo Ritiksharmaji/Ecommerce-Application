@@ -5,7 +5,7 @@ import { ScrollView, Text, TextInput, TouchableOpacity, View, ActivityIndicator,
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import Header from "@/components/Header";
-import { COLORS } from "@/constants";
+import { COLORS, CURRENCY, DELIVERY_FEE } from "@/constants";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/constants/api";
@@ -49,7 +49,7 @@ export default function Checkout() {
     // Stripe WebView gateway state
     const [gatewayUrl, setGatewayUrl] = useState<string | null>(null);
 
-    const shipping = 2.0;
+    const shipping = cartTotal === 0 ? 0 : DELIVERY_FEE;
     const tax = 0;
     const total = cartTotal + shipping + tax;
 
@@ -205,15 +205,15 @@ export default function Checkout() {
             <View className="p-4 bg-white shadow-lg border-t border-gray-100">
                 <View className="flex-row justify-between mb-2">
                     <Text className="text-secondary">Subtotal</Text>
-                    <Text className="font-bold">${cartTotal.toFixed(2)}</Text>
+                    <Text className="font-bold">{CURRENCY}{cartTotal.toFixed(2)}</Text>
                 </View>
                 <View className="flex-row justify-between mb-2">
                     <Text className="text-secondary">Shipping</Text>
-                    <Text className="font-bold">${shipping.toFixed(2)}</Text>
+                    <Text className="font-bold">{CURRENCY}{shipping.toFixed(2)}</Text>
                 </View>
                 <View className="flex-row justify-between mb-4">
                     <Text className="text-xl font-bold text-primary">Total</Text>
-                    <Text className="text-xl font-bold text-primary">${total.toFixed(2)}</Text>
+                    <Text className="text-xl font-bold text-primary">{CURRENCY}{total.toFixed(2)}</Text>
                 </View>
 
                 <TouchableOpacity

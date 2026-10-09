@@ -105,8 +105,7 @@ export default function AdminProducts() {
 
                             <View className="flex-1">
                                 <Text className="font-bold text-primary text-base" numberOfLines={1}>{product.name}</Text>
-                                <Text className="text-secondary text-xs mb-1" numberOfLines={1}>Category : {product.category || 'Others'}</Text>
-                                <Text className="text-secondary text-xs mb-1" numberOfLines={1}>Stock : {product.stock}</Text>
+                                <Text className="text-secondary text-xs mb-1" numberOfLines={1}>Category : {product.category || 'Others'}{product.subCategory ? ` · ${product.subCategory}` : ''}</Text>
                                 <Text className="text-secondary text-xs mb-1" numberOfLines={1}>Sizes : {product.sizes.join(", ")}</Text>
                                 <Text className="text-primary font-bold">${product.price.toFixed(2)}</Text>
                             </View>

@@ -5,7 +5,7 @@ import Toast from 'react-native-toast-message';
 import { COLORS } from "@/constants";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { CATEGORIES } from "@/constants";
+import { CATEGORIES, SUBCATEGORIES } from "@/constants";
 import api from "@/constants/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -20,8 +20,8 @@ export default function AddProduct() {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
     const [price, setPrice] = useState("");
-    const [stock, setStock] = useState("");
     const [category, setCategory] = useState("Men");
+    const [subCategory, setSubCategory] = useState(SUBCATEGORIES[0]);
     const [sizes, setSizes] = useState("");
     const [images, setImages] = useState<string[]>([]);
     const [isFeatured, setIsFeatured] = useState(false);
@@ -64,8 +64,7 @@ export default function AddProduct() {
             formData.append("description", description);
             formData.append("price", price);
             formData.append("category", category);
-            // web product model requires subCategory; mobile UI has no field for it
-            formData.append("subCategory", "Topwear");
+            formData.append("subCategory", subCategory);
             formData.append("bestseller", isFeatured ? "true" : "false");
             formData.append("sizes", JSON.stringify(sizesArray));
 
@@ -175,17 +174,21 @@ export default function AddProduct() {
                     </TouchableWithoutFeedback>
                 </Modal>
 
-                {/* STOCK */}
+                {/* SUB-CATEGORY (Type) */}
                 <Text className="text-secondary text-xs font-bold mb-1 uppercase">
-                    Stock Level
+                    Type
                 </Text>
-                <TextInput
-                    className="bg-surface p-3 rounded-lg mb-4 text-primary"
-                    placeholder="0"
-                    keyboardType="number-pad"
-                    value={stock}
-                    onChangeText={setStock}
-                />
+                <View className="flex-row flex-wrap gap-2 mb-4">
+                    {SUBCATEGORIES.map((sub) => (
+                        <TouchableOpacity
+                            key={sub}
+                            onPress={() => setSubCategory(sub)}
+                            className={`px-4 py-2 rounded-full border ${subCategory === sub ? "bg-primary border-primary" : "bg-surface border-gray-200"}`}
+                        >
+                            <Text className={subCategory === sub ? "text-white" : "text-primary"}>{sub}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
 
                 {/* SIZES */}
                 <Text className="text-secondary text-xs font-bold mb-1 uppercase">

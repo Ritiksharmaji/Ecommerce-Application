@@ -1,4 +1,5 @@
 import type { Product, Order } from "@/constants/types";
+import { DELIVERY_FEE } from "@/constants";
 
 /**
  * The WEB backend (forever-full-stack) stores products as:
@@ -23,7 +24,8 @@ export const normalizeProduct = (p: any): Product => {
         comparePrice: undefined,
         images,
         sizes: Array.isArray(p?.sizes) ? p.sizes : [],
-        category: p?.category ?? "Other",
+        category: p?.category ?? "",
+        subCategory: p?.subCategory ?? "",
         // web has no stock concept -> treat as available
         stock: typeof p?.stock === "number" ? p.stock : 99,
         ratings: { average: 4.5, count: 0 },
@@ -76,6 +78,12 @@ export const normalizeOrder = (o: any): Order => {
 
     const addr = o?.address ?? {};
 
+    // The web backend stores `amount` = cart subtotal + the flat delivery fee.
+    // Split it back out so the order summary stays consistent with cart/checkout.
+    const amount = Number(o?.amount ?? 0);
+    const shippingCost = amount > 0 ? DELIVERY_FEE : 0;
+    const subtotal = Math.max(0, amount - shippingCost);
+
     return {
         _id: o?._id,
         user: o?.userId ?? "",
@@ -91,10 +99,10 @@ export const normalizeOrder = (o: any): Order => {
         paymentMethod: o?.paymentMethod ?? "COD",
         paymentStatus: o?.payment ? "paid" : "pending",
         orderStatus: status,
-        subtotal: Number(o?.amount ?? 0),
-        shippingCost: 0,
+        subtotal,
+        shippingCost,
         tax: 0,
-        totalAmount: Number(o?.amount ?? 0),
+        totalAmount: amount,
         createdAt: o?.date ? new Date(o.date).toISOString() : new Date().toISOString(),
     };
 };

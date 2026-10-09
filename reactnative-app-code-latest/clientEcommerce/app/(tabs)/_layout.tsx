@@ -26,8 +26,8 @@ export default function TabLayout() {
      }}
      >
         <Tabs.Screen name='index' options={{
-            tabBarIcon: ({color,focus})=> 
-            <Ionicons name={focus ? "Home": "home-outline"} 
+            tabBarIcon: ({color,focused})=>
+            <Ionicons name={focused ? "home": "home-outline"}
             size={26} color={color}/>
         }}/>
          {/* <Tabs.Screen name='cart' options={{
@@ -50,14 +50,14 @@ export default function TabLayout() {
             />
 
          <Tabs.Screen name='favorites' options={{
-            tabBarIcon: ({color,focus})=> 
-            <Ionicons name={focus ? "heart": "heart-outline"} 
+            tabBarIcon: ({color,focused})=>
+            <Ionicons name={focused ? "heart": "heart-outline"}
             size={26} color={color}/>
         }}/>
 
          <Tabs.Screen name='profile' options={{
-            tabBarIcon: ({color,focus})=> 
-            <Ionicons name={focus ? "person": "person-outline"} 
+            tabBarIcon: ({color,focused})=>
+            <Ionicons name={focused ? "person": "person-outline"}
             size={26} color={color}/>
         }}/>
 

@@ -28,6 +28,7 @@ export interface Product {
               name: string;
           }
         | string;
+    subCategory?: string;
     stock: number;
     ratings: {
         average: number;

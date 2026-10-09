@@ -18,6 +18,7 @@ import ProductCard from "@/components/ProductCard";
 import { Product } from "@/constants/types";
 import api from "@/constants/api";
 import { normalizeProducts } from "@/constants/normalize";
+import Toast from "react-native-toast-message";
 
 const { width } = Dimensions.get("window");
 
@@ -46,6 +47,12 @@ export default function Home() {
     { id: "all", name: "All", icon: "grid" },
     ...CATEGORIES,
   ];
+
+  // Mirror the web home: Latest Collection (newest) + Best Seller (bestseller).
+  const latestProducts = [...products]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 10);
+  const bestSellers = products.filter((p) => p.isFeatured).slice(0, 6);
 
   const ITEM_WIDTH = width - 32;
 
@@ -125,6 +132,7 @@ export default function Home() {
                   </Text>
 
                   <TouchableOpacity
+                    onPress={() => router.push("/shop")}
                     style={{
                       marginTop: 10,
                       backgroundColor: "#fff",
@@ -206,12 +214,11 @@ export default function Home() {
           </ScrollView>
         </View>
 
-        {/* to display the products  */}
-        <View className="mb-8">
-
+        {/* ================= Latest Collection ================= */}
+        <View className="mb-4">
           <View className="mt-8 mb-6 px-2 py-2 flex-row justify-between items-center">
               <Text className="text-xl font-bold text-primary">
-                Popular
+                Latest Collection
               </Text>
 
               <TouchableOpacity onPress={() => router.push('/shop')}>
@@ -221,10 +228,9 @@ export default function Home() {
               </TouchableOpacity>
           </View>
 
-      
           {loading ? (
               <ActivityIndicator size="large" style={{ marginTop: 20 }} />
-            ) : products?.length === 0 ? (
+            ) : latestProducts.length === 0 ? (
               <Text style={{ textAlign: "center", marginTop: 20 }}>
                 No products found
               </Text>
@@ -236,14 +242,33 @@ export default function Home() {
                   justifyContent: "space-between",
                 }}
               >
-                {products.slice(0, 4).map((product) => (
+                {latestProducts.map((product) => (
                   <ProductCard key={product._id} product={product} />
                 ))}
               </View>
             )
           }
-           
         </View>
+
+        {/* ================= Best Seller ================= */}
+        {!loading && bestSellers.length > 0 && (
+          <View className="mb-8">
+            <View className="mb-6 px-2 py-2 flex-row justify-between items-center">
+              <Text className="text-xl font-bold text-primary">Best Seller</Text>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                justifyContent: "space-between",
+              }}
+            >
+              {bestSellers.map((product) => (
+                <ProductCard key={product._id} product={product} />
+              ))}
+            </View>
+          </View>
+        )}
 
        {/* newsletter CTA */}
         <View className="bg-gray-100 p-6 rounded-2xl mb-20 items-center">
@@ -257,7 +282,12 @@ export default function Home() {
           </Text>
 
           {/* FIXED BUTTON */}
-          <TouchableOpacity className="bg-primary w-full py-3 rounded-full items-center">
+          <TouchableOpacity
+            onPress={() =>
+              Toast.show({ type: "success", text1: "Subscribed!", text2: "Thanks for joining our newsletter." })
+            }
+            className="bg-primary w-full py-3 rounded-full items-center"
+          >
             <Text className=" text-white font-medium text-base">
               Subscribe Now
             </Text>

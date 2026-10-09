@@ -1,0 +1,5 @@
+# Environment files hold secrets (DB URLs, API keys, passwords) - never commit them.
+# Commit a .env.example with placeholder values instead.
+.env
+.env.*
+!.env.example

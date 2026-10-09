@@ -1,0 +1,85 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "fullcalendar-demo",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "D:/Software/Testing-Software/Full-Calender-Demo",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5199",
+        "--strictPort"
+      ],
+      "port": 5199
+    },
+    {
+      "name": "web-frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "D:/Projects/ResumeProjects/Level_3_ECommerceApplication/Ecommerce-APP/Ecommerce-FrontEnd/Web-App/frontend",
+        "run",
+        "dev"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "food-del-frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "D:/Projects/ResumeProjects/Level_3_2_FoodApplication/food-del/frontend",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5191",
+        "--strictPort"
+      ],
+      "port": 5191
+    },
+    {
+      "name": "foodMobileApp-web",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "--yes",
+        "serve",
+        "-l",
+        "8090",
+        "D:/Projects/ResumeProjects/Level_3_2_FoodApplication/food-del/Food-Front-End/Food-Front-Mobile-app/foodMobileApp/dist"
+      ],
+      "port": 8090
+    },
+    {
+      "name": "jobhook-angular",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "D:/Projects/ResumeProjects/Level_2_2_Job-portal-full-stack/JobFrontendApp/JobWebApp/frontend_Angular",
+        "start",
+        "--",
+        "--port",
+        "4210"
+      ],
+      "port": 4210
+    },
+    {
+      "name": "jobhook-nextjs",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "D:/Projects/ResumeProjects/Level_2_2_Job-portal-full-stack/JobFrontendApp/JobWebApp/frontend_NextJs",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3010"
+      ],
+      "port": 3010
+    }
+  ]
+}

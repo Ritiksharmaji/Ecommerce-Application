@@ -79,14 +79,16 @@ export const updateCartItem = async (req: Request, res: Response) => {
             return res.status(404).json({ success: false, message: "Cart not found" });
         }
 
-        const item = cart.items.find((item) => item.product.toString() === productId && item.size === size);
+        // Items without a size are stored with an empty/missing size
+        const sameLine = (item: any) => item.product.toString() === productId && (item.size || "") === (size || "");
+        const item = cart.items.find(sameLine);
 
         if (!item) {
             return res.status(404).json({ success: false, message: "Item not in cart" });
         }
 
         if (quantity <= 0) {
-            cart.items = cart.items.filter((item) => item.product.toString() !== productId);
+            cart.items = cart.items.filter((item) => !sameLine(item));
         } else {
             const product = await Product.findById(productId);
             if (product!.stock < quantity) {
@@ -110,14 +112,15 @@ export const updateCartItem = async (req: Request, res: Response) => {
 // DELETE /api/cart/item/:productId
 export const removeCartItem = async (req: Request, res: Response) => {
     try {
-        const { size } = req.query;
+        // `size` is optional: products without sizes are stored with an empty size
+        const size = (req.query.size as string) || "";
 
         const cart = await Cart.findOne({ user: req.user._id });
-        if (!cart || !size) {
+        if (!cart) {
             return res.status(404).json({ success: false, message: "Cart not found" });
         }
 
-        cart.items = cart.items.filter((item) => item.product.toString() !== req.params.productId || item.size !== size);
+        cart.items = cart.items.filter((item) => item.product.toString() !== req.params.productId || (item.size || "") !== size);
 
         cart.calculateTotal();
         await cart.save();

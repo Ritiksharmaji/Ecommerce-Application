@@ -13,6 +13,7 @@ import AdminRouter from "./routes/adminRoutes.js";
 import paymentRouter from "./routes/paymentRoute.js";
 import { handleStripeWebhook } from "./controllers/paymentController.js";
 import Address from "./models/Address.js";
+import { requestLogger } from "./middleware/requestLogger.js";
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use(cors());
 // is available for signature verification
 process.env.STRIPE_SECRET_KEY && app.post("/api/stripe", express.raw({ type: "application/json" }), handleStripeWebhook);
 app.use(express.json());
+app.use(requestLogger);
 await makeAdmin();
 process.env.STRIPE_SECRET_KEY && app.use("/api/payments", paymentRouter);
 const port = process.env.PORT || 3000;

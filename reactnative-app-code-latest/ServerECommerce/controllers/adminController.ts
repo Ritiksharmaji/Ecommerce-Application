@@ -12,7 +12,8 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         const totalOrders = await Order.countDocuments();
 
         const validOrders = await Order.find({ orderStatus: { $ne: "cancelled" } });
-        const totalRevenue = validOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+        // Older orders in the database (from the previous web backend) have no totalAmount
+        const totalRevenue = validOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
 
         const recentOrders = await Order.find().sort("-createdAt").limit(5).populate("user", "name email");
 

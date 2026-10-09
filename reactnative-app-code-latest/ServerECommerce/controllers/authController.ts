@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import { describePassword } from "../middleware/requestLogger.js";
 
 const signToken = (userId: string): string => {
     const secret = process.env.JWT_SECRET;
@@ -51,11 +52,13 @@ export const login = async (req: Request, res: Response) => {
 
         // password has select:false, so explicitly select it here
         const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
+        console.log(`[login] email="${email}" password=${describePassword(password)} -> user ${user ? `found (role=${user.role})` : "NOT FOUND"}`);
         if (!user) {
             return res.status(401).json({ success: false, message: "Invalid credentials" });
         }
 
         const match = await user.comparePassword(password);
+        console.log(`[login] ${email}: password ${match ? "MATCHES" : "DOES NOT MATCH"}`);
         if (!match) {
             return res.status(401).json({ success: false, message: "Invalid credentials" });
         }

@@ -42,6 +42,7 @@ export const getProduct = async (req: Request, res: Response) => {
 // Create product
 // POST /api/products
 export const createProduct = async (req: Request, res: Response) => {
+    console.log( `create product backend call with request prapms:`, req);
     try {
         let images = [];
 
@@ -92,6 +93,7 @@ export const createProduct = async (req: Request, res: Response) => {
         }
 
         const product = await Product.create(productData);
+        console.log("after created prodduct resposne:"+ product);
         res.status(201).json({ success: true, data: product });
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });

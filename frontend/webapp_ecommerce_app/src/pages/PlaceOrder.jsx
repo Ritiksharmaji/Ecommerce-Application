@@ -135,7 +135,7 @@ const PlaceOrder = () => {
                     </div>
 
                     <div className='w-full text-end mt-8'>
-                        <button disabled={loading} type='submit' className='bg-black text-white px-16 py-3 text-sm disabled:bg-gray-400'>{loading ? 'PLACING ORDER...' : 'PLACE ORDER'}</button>
+                        <button disabled={loading} type='submit' className='bg-primary text-white px-16 py-3 text-sm disabled:bg-gray-400'>{loading ? 'PLACING ORDER...' : 'PLACE ORDER'}</button>
                     </div>
                 </div>
             </div>

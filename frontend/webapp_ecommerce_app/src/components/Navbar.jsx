@@ -12,7 +12,7 @@ const Navbar = () => {
   return (
     <div className='flex items-center justify-between py-5 font-medium'>
       
-      <Link to='/'><img src={assets.logo} className='w-36' alt="" /></Link>
+      <Link to='/'><img src={assets.logo} className='h-8 sm:h-9 w-auto' alt='Shopvra' /></Link>
 
       <ul className='hidden sm:flex gap-5 text-sm text-gray-700'>
         
@@ -54,11 +54,11 @@ const Navbar = () => {
             </div> 
             <Link to='/wishlist' className='relative text-xl leading-none' title='Wishlist'>
                 ♡
-                {wishlist.length > 0 && <p className='absolute right-[-7px] bottom-[-5px] w-4 text-center leading-4 bg-black text-white aspect-square rounded-full text-[8px]'>{wishlist.length}</p>}
+                {wishlist.length > 0 && <p className='absolute right-[-7px] bottom-[-5px] w-4 text-center leading-4 bg-accent text-white aspect-square rounded-full text-[8px]'>{wishlist.length}</p>}
             </Link>
             <Link to='/cart' className='relative'>
                 <img src={assets.cart_icon} className='w-5 min-w-5' alt="" />
-                <p className='absolute right-[-5px] bottom-[-5px] w-4 text-center leading-4 bg-black text-white aspect-square rounded-full text-[8px]'>{getCartCount()}</p>
+                <p className='absolute right-[-5px] bottom-[-5px] w-4 text-center leading-4 bg-accent text-white aspect-square rounded-full text-[8px]'>{getCartCount()}</p>
             </Link> 
             <img onClick={()=>setVisible(true)} src={assets.menu_icon} className='w-5 cursor-pointer sm:hidden' alt="" /> 
       </div>

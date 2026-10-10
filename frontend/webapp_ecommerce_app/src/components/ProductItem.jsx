@@ -18,7 +18,7 @@ const ProductItem = ({id,image,name,price,comparePrice,stock}) => {
         >
           <span className={liked ? 'text-red-500' : 'text-gray-400'}>{liked ? '♥' : '♡'}</span>
         </button>
-        {stock === 0 && <p className='absolute bottom-2 left-2 bg-black text-white text-xs px-2 py-1'>OUT OF STOCK</p>}
+        {stock === 0 && <p className='absolute bottom-2 left-2 bg-primary text-white text-xs px-2 py-1'>OUT OF STOCK</p>}
       </div>
       <p className='pt-3 pb-1 text-sm'>{name}</p>
       <p className=' text-sm font-medium'>

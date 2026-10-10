@@ -90,7 +90,7 @@ const Product = () => {
             </div>
           )}
           <div className={`flex gap-3 ${productData.sizes?.length ? '' : 'mt-8'}`}>
-            <button disabled={outOfStock} onClick={()=>addToCart(productData._id,size)} className='bg-black text-white px-8 py-3 text-sm active:bg-gray-700 disabled:bg-gray-400'>{outOfStock ? 'OUT OF STOCK' : 'ADD TO CART'}</button>
+            <button disabled={outOfStock} onClick={()=>addToCart(productData._id,size)} className='bg-primary text-white px-8 py-3 text-sm active:bg-gray-700 disabled:bg-gray-400'>{outOfStock ? 'OUT OF STOCK' : 'ADD TO CART'}</button>
             <button onClick={()=>toggleWishlist(productData._id)} className='border px-5 py-3 text-sm'>
               <span className={liked ? 'text-red-500' : ''}>{liked ? '♥ WISHLISTED' : '♡ WISHLIST'}</span>
             </button>

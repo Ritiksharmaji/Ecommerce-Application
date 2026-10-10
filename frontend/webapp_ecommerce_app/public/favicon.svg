@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><defs><clipPath id="top"><rect x="150" y="200" width="212" height="96" transform="rotate(-18 256 302)"/></clipPath></defs>
+  <rect width="512" height="512" rx="116" fill="#111111"/>
+  <path d="M182 196 V180 a74 62 0 0 1 148 0 V196" fill="none" stroke="#FFFFFF" stroke-width="30" stroke-linecap="round"/>
+  <path d="M128 196 H384 a10 10 0 0 1 10 11 L378 384 a32 32 0 0 1 -32 29 H166 a32 32 0 0 1 -32 -29 L118 207 a10 10 0 0 1 10 -11 Z" fill="#FFFFFF"/>
+  <circle cx="256" cy="302" r="40" fill="#FF4C3B"/>
+  <ellipse cx="256" cy="302" rx="78" ry="22" fill="none" stroke="#111111" stroke-width="9" transform="rotate(-18 256 302)"/>
+  <circle cx="256" cy="302" r="40" fill="#FF4C3B" clip-path="url(#top)"/></svg>

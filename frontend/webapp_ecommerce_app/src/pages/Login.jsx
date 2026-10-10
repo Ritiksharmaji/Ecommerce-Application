@@ -33,7 +33,9 @@ const Login = () => {
 
   useEffect(()=>{
     if (token) {
-      navigate('/')
+      // e.g. /login?redirect=/delete-account returns there after signing in (internal paths only)
+      const redirect = new URLSearchParams(window.location.search).get('redirect')
+      navigate(redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/')
     }
   },[token])
 
@@ -56,7 +58,7 @@ const Login = () => {
               : <p onClick={()=>setCurrentState('Login')} className=' cursor-pointer'>Login Here</p>
             }
         </div>
-        <button disabled={loading} className='bg-black text-white font-light px-8 py-2 mt-4 disabled:opacity-60'>{loading ? 'Please wait...' : currentState === 'Login' ? 'Sign In' : 'Sign Up'}</button>
+        <button disabled={loading} className='bg-primary text-white font-light px-8 py-2 mt-4 disabled:opacity-60'>{loading ? 'Please wait...' : currentState === 'Login' ? 'Sign In' : 'Sign Up'}</button>
     </form>
   )
 }

@@ -90,13 +90,14 @@ const Profile = () => {
           <button onClick={() => navigate('/orders')} className='border px-4 py-2'>My Orders</button>
           <button onClick={() => navigate('/wishlist')} className='border px-4 py-2'>Wishlist</button>
           <button onClick={logout} className='border px-4 py-2 text-red-500'>Logout</button>
+          <button onClick={() => navigate('/delete-account')} className='px-4 py-2 text-sm text-gray-500 underline'>Delete account</button>
         </div>
       </div>
 
       {/* Addresses */}
       <div className='flex justify-between items-center mt-10 mb-4'>
         <p className='text-xl'>Saved Addresses</p>
-        {!form && <button onClick={() => setForm({ ...EMPTY, isDefault: addresses.length === 0 })} className='bg-black text-white text-sm px-5 py-2'>+ ADD ADDRESS</button>}
+        {!form && <button onClick={() => setForm({ ...EMPTY, isDefault: addresses.length === 0 })} className='bg-primary text-white text-sm px-5 py-2'>+ ADD ADDRESS</button>}
       </div>
 
       {form && (
@@ -120,7 +121,7 @@ const Profile = () => {
             <input type='checkbox' name='isDefault' checked={form.isDefault} onChange={onChange} /> Use as default address
           </label>
           <div className='flex gap-3'>
-            <button disabled={saving} className='bg-black text-white text-sm px-6 py-2 disabled:bg-gray-400'>{saving ? 'SAVING...' : 'SAVE'}</button>
+            <button disabled={saving} className='bg-primary text-white text-sm px-6 py-2 disabled:bg-gray-400'>{saving ? 'SAVING...' : 'SAVE'}</button>
             <button type='button' onClick={() => setForm(null)} className='border text-sm px-6 py-2'>CANCEL</button>
           </div>
         </form>
@@ -132,7 +133,7 @@ const Profile = () => {
         {addresses.map((a) => (
           <div key={a._id} className={`border p-4 text-sm ${a.isDefault ? 'border-black' : ''}`}>
             <div className='flex justify-between mb-2'>
-              <p className='font-medium'>{a.type}{a.isDefault && <span className='ml-2 text-xs bg-black text-white px-2 py-0.5'>DEFAULT</span>}</p>
+              <p className='font-medium'>{a.type}{a.isDefault && <span className='ml-2 text-xs bg-primary text-white px-2 py-0.5'>DEFAULT</span>}</p>
               <div className='flex gap-3 text-gray-500'>
                 {!a.isDefault && <button onClick={() => makeDefault(a)} className='hover:text-black'>Set default</button>}
                 <button onClick={() => setForm(a)} className='hover:text-black'>Edit</button>

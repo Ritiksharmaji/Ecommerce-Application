@@ -75,7 +75,7 @@ const ShopContextProvider = (props) => {
         saveSession(data.token, data.user)
     }
 
-    const logout = () => {
+    const clearSession = () => {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
         delete api.defaults.headers.common['Authorization']
@@ -83,7 +83,17 @@ const ShopContextProvider = (props) => {
         setUser(null)
         setCartItems([])
         setWishlist([])
+    }
+
+    const logout = () => {
+        clearSession()
         navigate('/login')
+    }
+
+    // DELETE /api/auth/me { password } - permanently deletes the account (Google Play requirement)
+    const deleteAccount = async (password) => {
+        await api.delete('/api/auth/me', { data: { password } })
+        clearSession()
     }
 
     // ---------- products ----------
@@ -255,7 +265,7 @@ const ShopContextProvider = (props) => {
         api, backendUrl, navigate,
         products, currency, delivery_fee,
         search, setSearch, showSearch, setShowSearch,
-        token, user, login, register, logout,
+        token, user, login, register, logout, deleteAccount,
         cartItems, addToCart, updateQuantity, clearCart, flushCart, getUserCart,
         getCartCount, getCartAmount,
         wishlist, isInWishlist, toggleWishlist,

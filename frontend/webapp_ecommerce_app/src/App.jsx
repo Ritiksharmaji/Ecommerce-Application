@@ -17,6 +17,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Verify from './pages/Verify'
 import Wishlist from './pages/Wishlist'
 import Profile from './pages/Profile'
+import ChatWidget from './components/ChatWidget'
 import Privacy from './pages/Privacy'
 import DeleteAccount from './pages/DeleteAccount'
 
@@ -43,6 +44,7 @@ const App = () => {
         <Route path='/delete-account' element={<DeleteAccount />} />
       </Routes>
       <Footer />
+      <ChatWidget />
     </div>
   )
 }

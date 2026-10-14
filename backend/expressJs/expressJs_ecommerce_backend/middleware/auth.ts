@@ -44,3 +44,19 @@ export const authorize = (...roles: string[]) => {
         next();
     };
 };
+
+/** Like `protect`, but lets guests through: sets req.user when a valid Bearer token is sent. */
+export const optionalAuth = async (req: Request, _res: Response, next: NextFunction) => {
+    try {
+        const header = req.headers.authorization;
+        const secret = process.env.JWT_SECRET;
+        if (header?.startsWith("Bearer ") && secret) {
+            const decoded = jwt.verify(header.split(" ")[1], secret) as JwtPayload;
+            const user = await User.findById(decoded.id);
+            if (user) req.user = user;
+        }
+    } catch {
+        // invalid/expired token: continue as guest
+    }
+    next();
+};

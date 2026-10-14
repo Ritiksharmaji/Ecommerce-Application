@@ -3,6 +3,7 @@ import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import LoadingView from '@/components/common/LoadingView';
 import {useAuth} from '@/context/AuthContext';
+import AssistantScreen from '@/screens/assistant/AssistantScreen';
 import SignInScreen from '@/screens/auth/SignInScreen';
 import SignUpScreen from '@/screens/auth/SignUpScreen';
 import CheckoutScreen from '@/screens/checkout/CheckoutScreen';
@@ -34,6 +35,11 @@ export default function RootNavigator() {
         <Stack.Screen name="Orders" component={OrdersScreen} />
         <Stack.Screen name="OrderDetails" component={OrderDetailsScreen} />
         <Stack.Screen name="Admin" component={AdminNavigator} />
+        <Stack.Screen
+          name="Assistant"
+          component={AssistantScreen}
+          options={{animation: 'slide_from_bottom'}}
+        />
         {/* Guest-only: removed after sign-in, which returns the user to the previous screen. */}
         {!isSignedIn && (
           <Stack.Group screenOptions={{animation: 'slide_from_bottom'}}>

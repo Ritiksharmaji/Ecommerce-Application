@@ -5,6 +5,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import {BANNERS} from '@/assets/data/banners';
 import AppHeader from '@/components/common/AppHeader';
+import AssistantFab from '@/components/common/AssistantFab';
 import PrimaryButton from '@/components/common/PrimaryButton';
 import SectionHeader from '@/components/common/SectionHeader';
 import CategoryItem from '@/components/product/CategoryItem';
@@ -109,6 +110,7 @@ export default function HomeScreen({navigation}: MainTabScreenProps<'Home'>) {
           />
         </View>
       </ScrollView>
+      <AssistantFab />
     </SafeAreaView>
   );
 }

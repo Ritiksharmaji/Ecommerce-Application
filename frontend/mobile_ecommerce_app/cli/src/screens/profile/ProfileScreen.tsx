@@ -120,6 +120,11 @@ export default function ProfileScreen({navigation}: MainTabScreenProps<'Profile'
           />
           <Menu
             items={[
+              {
+                title: 'Shopping Assistant',
+                icon: 'sparkles-outline',
+                onPress: () => navigation.navigate('Assistant'),
+              },
               {title: 'Privacy Policy', icon: 'document-text-outline', onPress: openPrivacyPolicy},
             ]}
           />

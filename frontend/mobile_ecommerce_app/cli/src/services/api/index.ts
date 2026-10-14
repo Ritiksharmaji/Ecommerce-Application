@@ -8,3 +8,5 @@ export type {CreateOrderInput} from './orderApi';
 export {addressApi} from './addressApi';
 export {adminApi} from './adminApi';
 export {paymentApi} from './paymentApi';
+export {chatApi} from './chatApi';
+export type {ChatRequest} from './chatApi';

@@ -8,6 +8,7 @@ import AddressRouter from "./routes/addressRoutes.js";
 import WishlistRouter from "./routes/wishlistRoutes.js";
 import AdminRouter from "./routes/adminRoutes.js";
 import paymentRouter from "./routes/paymentRoute.js";
+import ChatRouter from "./routes/chatRoutes.js";
 import { handleStripeWebhook } from "./controllers/paymentController.js";
 import { requestLogger } from "./middleware/requestLogger.js";
 
@@ -40,6 +41,7 @@ app.use("/api/orders", OrderRouter);
 app.use("/api/addresses", AddressRouter);
 app.use("/api/wishlist", WishlistRouter);
 app.use("/api/admin", AdminRouter);
+app.use("/api/chat", ChatRouter);
 
 // JSON 404 for unknown routes
 app.use((req: Request, res: Response) => {

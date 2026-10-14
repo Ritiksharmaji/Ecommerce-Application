@@ -3,6 +3,7 @@ import {FlatList, RefreshControl, TouchableOpacity, View} from 'react-native';
 import {TextInput} from '@/components/ui/Typography';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import AppHeader from '@/components/common/AppHeader';
+import AssistantFab from '@/components/common/AssistantFab';
 import EmptyState from '@/components/common/EmptyState';
 import LoadingView from '@/components/common/LoadingView';
 import {Ionicons} from '@/components/icons';
@@ -82,6 +83,8 @@ export default function ShopScreen({route}: RootStackScreenProps<'Shop'>) {
           }
         />
       )}
+
+      <AssistantFab />
 
       <ShopFilterModal
         visible={showFilters}

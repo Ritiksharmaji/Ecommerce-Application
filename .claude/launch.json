@@ -80,6 +80,32 @@
         "3010"
       ],
       "port": 3010
+    },
+    {
+      "name": "shopvra-backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "/Users/apple/Documents/personal-folder/Projects/ResumeProjects/Level_3_ECommerceApplication/Ecommerce-mobile-app/latest-code/Ecommerce-ReactNative-Application/backend/expressJs/expressJs_ecommerce_backend",
+        "run",
+        "start"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "shopvra-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "/Users/apple/Documents/personal-folder/Projects/ResumeProjects/Level_3_ECommerceApplication/Ecommerce-mobile-app/latest-code/Ecommerce-ReactNative-Application/frontend/webapp_ecommerce_app",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5173",
+        "--strictPort"
+      ],
+      "port": 5173
     }
   ]
 }

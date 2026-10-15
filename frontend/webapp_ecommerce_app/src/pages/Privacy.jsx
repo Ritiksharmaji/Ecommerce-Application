@@ -4,7 +4,7 @@ import Title from '../components/Title'
 
 // Public privacy policy - linked from the Google Play listing, the mobile app and the footer.
 // Keep it in sync with what the apps and backend actually collect.
-const LAST_UPDATED = 'October 10, 2026'
+const LAST_UPDATED = 'October 15, 2026'
 const CONTACT_EMAIL = 'support@shopvra.space'
 
 const Section = ({ title, children }) => (
@@ -43,9 +43,11 @@ const Privacy = () => {
             <li><b>Orders</b> - products, sizes, quantities, prices, payment method and status, delivery notes and order history.</li>
             <li><b>Cart and wishlist</b> - the products you add, so they are available on all your devices.</li>
             <li><b>Payment information</b> - card payments are processed by <b>Stripe</b>. We never see or store your full card number; we only receive the payment result.</li>
+            <li><b>Voice input (optional)</b> - if you use the microphone in the shopping assistant, your speech is converted to text by your device's or browser's speech service (Google on Android, Apple on iOS, your browser on the web). Shopvra receives only the resulting text and never stores audio recordings. Replies can be read aloud by your device's text-to-speech; this happens on your device.</li>
+            <li><b>Assistant conversations</b> - messages you send to the shopping assistant are processed by our AI provider (Google Gemini or Anthropic Claude) to generate replies and are kept for up to 7 days.</li>
             <li><b>Technical data</b> - our servers record basic request information (such as IP address, device/browser type and time) to keep the service secure and fix errors.</li>
           </ul>
-          <p>We do <b>not</b> collect your precise location, contacts, photos (except images an administrator uploads for products), or use advertising or analytics trackers.</p>
+          <p>We do <b>not</b> collect your precise location, contacts, audio recordings, photos (except images an administrator uploads for products), or use advertising or analytics trackers.</p>
         </Section>
 
         <Section title='3. How we use your data'>
@@ -65,6 +67,7 @@ const Privacy = () => {
             <li><b>Amazon Web Services</b> - hosting of our website and API.</li>
             <li><b>MongoDB Atlas</b> - database hosting.</li>
             <li><b>Cloudinary</b> - storage of product images.</li>
+            <li><b>Google (Gemini) / Anthropic (Claude)</b> - AI that powers the shopping assistant's replies.</li>
           </ul>
           <p>We may also disclose data if required by law or to protect the rights and safety of our users.</p>
         </Section>

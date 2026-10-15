@@ -9,6 +9,7 @@ import React, {
   useState,
 } from 'react';
 import {useAuth} from '@/context/AuthContext';
+import {useReadAloud} from '@/hooks/useReadAloud';
 import {chatApi, type ChatRequest} from '@/services/api';
 import type {ChatActionResult, ChatItem, ChatResponse} from '@/types/chat';
 import {getErrorMessage} from '@/utils/errors';
@@ -20,6 +21,9 @@ interface ChatContextValue {
   /** Report what the app did for an assistant action; the turn resumes once every action has a result. */
   resolveAction: (id: string, ok: boolean, result: string) => void;
   resetChat: () => void;
+  /** Read assistant replies aloud (off by default - typing/reading is the default mode). */
+  readAloud: boolean;
+  toggleReadAloud: () => void;
 }
 
 const ChatContext = createContext<ChatContextValue | undefined>(undefined);
@@ -35,6 +39,10 @@ export function ChatProvider({children}: {children: ReactNode}) {
   const {token} = useAuth();
   const [items, setItems] = useState<ChatItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [readAloud, setReadAloud] = useState(false);
+  const readAloudRef = useRef(readAloud);
+  readAloudRef.current = readAloud;
+  const {speak, stop: stopSpeaking} = useReadAloud();
   const sessionId = useRef<string | undefined>(undefined);
   /** Results for the current batch of actions (null = still waiting). */
   const batch = useRef<Map<string, ChatActionResult | null>>(new Map());
@@ -44,7 +52,15 @@ export function ChatProvider({children}: {children: ReactNode}) {
     batch.current = new Map();
     setItems([]);
     setLoading(false);
-  }, []);
+    stopSpeaking();
+  }, [stopSpeaking]);
+
+  const toggleReadAloud = useCallback(() => {
+    setReadAloud(on => {
+      if (on) stopSpeaking();
+      return !on;
+    });
+  }, [stopSpeaking]);
 
   // A conversation belongs to one account: start fresh on sign-out / account switch.
   const prevToken = useRef(token);
@@ -53,18 +69,22 @@ export function ChatProvider({children}: {children: ReactNode}) {
     prevToken.current = token;
   }, [token, resetChat]);
 
-  const handleResponse = useCallback((res: ChatResponse) => {
-    sessionId.current = res.sessionId;
-    const added: ChatItem[] = [];
-    if (res.reply || res.products.length) {
-      added.push({key: nextKey(), kind: 'assistant', text: res.reply, products: res.products});
-    }
-    batch.current = new Map(res.actions.map(a => [a.id, null]));
-    for (const action of res.actions) {
-      added.push({key: nextKey(), kind: 'action', action, status: 'pending'});
-    }
-    setItems(prev => [...prev, ...added]);
-  }, []);
+  const handleResponse = useCallback(
+    (res: ChatResponse) => {
+      sessionId.current = res.sessionId;
+      if (readAloudRef.current && res.reply) speak(res.reply);
+      const added: ChatItem[] = [];
+      if (res.reply || res.products.length) {
+        added.push({key: nextKey(), kind: 'assistant', text: res.reply, products: res.products});
+      }
+      batch.current = new Map(res.actions.map(a => [a.id, null]));
+      for (const action of res.actions) {
+        added.push({key: nextKey(), kind: 'action', action, status: 'pending'});
+      }
+      setItems(prev => [...prev, ...added]);
+    },
+    [speak],
+  );
 
   const post = useCallback(
     async (body: ChatRequest) => {
@@ -91,6 +111,7 @@ export function ChatProvider({children}: {children: ReactNode}) {
     (text: string) => {
       const message = text.trim();
       if (!message || loading) return;
+      stopSpeaking();
       // Unfinished actions are reported as not completed by the server.
       batch.current = new Map();
       setItems(prev => [
@@ -103,7 +124,7 @@ export function ChatProvider({children}: {children: ReactNode}) {
       ]);
       post({message});
     },
-    [loading, post],
+    [loading, post, stopSpeaking],
   );
 
   const resolveAction = useCallback(
@@ -127,8 +148,8 @@ export function ChatProvider({children}: {children: ReactNode}) {
   );
 
   const value = useMemo(
-    () => ({items, loading, sendMessage, resolveAction, resetChat}),
-    [items, loading, sendMessage, resolveAction, resetChat],
+    () => ({items, loading, sendMessage, resolveAction, resetChat, readAloud, toggleReadAloud}),
+    [items, loading, sendMessage, resolveAction, resetChat, readAloud, toggleReadAloud],
   );
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

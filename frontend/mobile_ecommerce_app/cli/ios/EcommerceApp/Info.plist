@@ -33,8 +33,12 @@
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Shopvra uses the microphone so you can talk to the shopping assistant.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Allow access to your photos to add product images.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Shopvra turns your voice into text so the shopping assistant can understand you.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIAppFonts</key>

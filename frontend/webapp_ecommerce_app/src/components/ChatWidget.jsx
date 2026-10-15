@@ -32,6 +32,31 @@ const SparkIcon = ({ className = 'w-6 h-6' }) => (
     </svg>
 )
 
+const MicIcon = ({ className = 'w-5 h-5' }) => (
+    <svg viewBox='0 0 24 24' className={className} fill='currentColor' aria-hidden='true'>
+        <path d='M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z' />
+    </svg>
+)
+const SpeakerIcon = ({ on, className = 'w-5 h-5' }) => (
+    <svg viewBox='0 0 24 24' className={className} fill='currentColor' aria-hidden='true'>
+        <path d='M3 9v6h4l5 5V4L7 9H3z' />
+        {on ? <path d='M16.5 12a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z' />
+            : <path d='M16.5 12l2.5-2.5 1.4 1.4L17.9 13.4l2.5 2.5-1.4 1.4-2.5-2.5-2.5 2.5-1.4-1.4 2.5-2.5-2.5-2.5 1.4-1.4z' />}
+    </svg>
+)
+
+// Browser speech support (Chrome, Edge, Safari). Firefox has no speech recognition -> mic hidden.
+const SpeechRecognitionImpl = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null
+const canSpeak = typeof window !== 'undefined' && 'speechSynthesis' in window
+const speakText = (text) => {
+    if (!canSpeak || !text) return
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text.replace(/[*_#`>|]/g, ''))
+    utterance.lang = navigator.language || 'en-US'
+    window.speechSynthesis.speak(utterance)
+}
+const stopSpeaking = () => canSpeak && window.speechSynthesis.cancel()
+
 function ProductCards({ products, onOpen }) {
     if (!products?.length) return null
     return (
@@ -188,6 +213,14 @@ const ChatWidget = () => {
     const batch = useRef(new Map())
     const started = useRef(new Set())
     const listRef = useRef(null)
+    // Voice (typing stays the default): mic = speech-to-text, speaker = read replies aloud
+    const [listening, setListening] = useState(false)
+    const [interim, setInterim] = useState('')
+    const [voiceError, setVoiceError] = useState('')
+    const [readAloud, setReadAloud] = useState(false)
+    const readAloudRef = useRef(false)
+    readAloudRef.current = readAloud
+    const recognitionRef = useRef(null)
 
     // New conversation when the account changes (sign in / out)
     const lastToken = useRef(token)
@@ -203,6 +236,7 @@ const ChatWidget = () => {
         try {
             const { data } = await api.post('/api/chat', { ...body, sessionId: sessionId.current }, { timeout: 60000 })
             sessionId.current = data.sessionId
+            if (readAloudRef.current && data.reply) speakText(data.reply)
             const added = []
             if (data.reply || data.products?.length) added.push({ key: key(), kind: 'assistant', text: data.reply, products: data.products || [] })
             batch.current = new Map(data.actions.map((a) => [a.id, null]))
@@ -219,6 +253,7 @@ const ChatWidget = () => {
         const message = value.trim()
         if (!message || loading) return
         batch.current = new Map()
+        stopSpeaking()
         setItems((prev) => [...prev.map((it) => (it.kind === 'action' && it.status === 'pending' ? { ...it, status: 'dismissed' } : it)), { key: key(), kind: 'user', text: message }])
         setText('')
         post({ message })
@@ -259,7 +294,38 @@ const ChatWidget = () => {
         }
     })
 
-    const reset = () => { sessionId.current = undefined; batch.current = new Map(); setItems([]) }
+    const startListening = () => {
+        if (!SpeechRecognitionImpl || loading) return
+        setVoiceError('')
+        const rec = new SpeechRecognitionImpl()
+        rec.lang = navigator.language || 'en-US'
+        rec.interimResults = true
+        rec.continuous = false
+        let finalText = ''
+        rec.onresult = (event) => {
+            let live = ''
+            for (const result of event.results) {
+                if (result.isFinal) finalText += result[0].transcript
+                else live += result[0].transcript
+            }
+            setInterim(finalText + live)
+        }
+        rec.onerror = (event) => {
+            setVoiceError(event.error === 'not-allowed' ? 'Allow microphone access to talk to the assistant' : event.error === 'no-speech' ? "Didn't catch that - try again" : 'Voice input stopped')
+        }
+        rec.onend = () => {
+            setListening(false)
+            setInterim('')
+            if (finalText.trim()) send(finalText)
+        }
+        recognitionRef.current = rec
+        setListening(true)
+        rec.start()
+    }
+    const stopListening = () => recognitionRef.current?.stop()
+    const toggleReadAloud = () => setReadAloud((on) => { if (on) stopSpeaking(); return !on })
+
+    const reset = () => { sessionId.current = undefined; batch.current = new Map(); setItems([]); stopSpeaking() }
 
     return (
         <>
@@ -277,6 +343,12 @@ const ChatWidget = () => {
                             <p className='font-semibold leading-tight'>Shopvra Assistant</p>
                             <p className='text-xs text-gray-300'>Search, cart, addresses and orders</p>
                         </div>
+                        {canSpeak && (
+                            <button onClick={toggleReadAloud} title={readAloud ? 'Stop reading replies aloud' : 'Read replies aloud'} aria-pressed={readAloud}
+                                className={`mr-1 ${readAloud ? 'text-accent' : 'text-gray-300 hover:text-white'}`}>
+                                <SpeakerIcon on={readAloud} />
+                            </button>
+                        )}
                         <button onClick={reset} className='text-xs text-gray-300 hover:text-white mr-2' disabled={loading}>New chat</button>
                         <button onClick={() => setOpen(false)} aria-label='Close' className='text-2xl leading-none hover:text-accent'>×</button>
                     </div>
@@ -313,10 +385,24 @@ const ChatWidget = () => {
                         {loading && <div className='self-start bg-surface text-secondary rounded-2xl px-3 py-2 text-sm animate-pulse'>Thinking…</div>}
                     </div>
 
+                    {(listening || voiceError) && (
+                        <div className={`px-4 pt-2 text-xs flex items-center gap-2 ${voiceError ? 'text-error' : 'text-secondary'}`}>
+                            {listening && <span className='w-2 h-2 rounded-full bg-accent animate-pulse' />}
+                            {voiceError || 'Listening… speak now, click the mic to stop'}
+                        </div>
+                    )}
                     <form onSubmit={(e) => { e.preventDefault(); send(text) }} className='flex items-end gap-2 border-t border-border p-3'>
-                        <textarea rows={1} maxLength={1000} value={text} onChange={(e) => setText(e.target.value)} placeholder='Ask Shopvra anything…'
+                        <textarea rows={1} maxLength={1000} value={listening ? interim : text} readOnly={listening} onChange={(e) => setText(e.target.value)}
+                            placeholder={listening ? 'Listening…' : 'Type or click the mic to talk…'}
                             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(text) } }}
                             className='flex-1 resize-none bg-surface rounded-xl px-3 py-2 text-sm outline-none max-h-28' />
+                        {SpeechRecognitionImpl && (
+                            <button type='button' onClick={listening ? stopListening : startListening} disabled={loading}
+                                aria-label={listening ? 'Stop listening' : 'Speak your message'} title={listening ? 'Stop listening' : 'Speak your message'}
+                                className={`w-10 h-10 rounded-full flex items-center justify-center ${listening ? 'bg-accent text-white' : 'bg-surface text-primary hover:bg-gray-200'}`}>
+                                <MicIcon />
+                            </button>
+                        )}
                         <button type='submit' disabled={!text.trim() || loading} aria-label='Send'
                             className='w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center disabled:bg-gray-300'>↑</button>
                     </form>

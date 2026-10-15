@@ -11,6 +11,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {Ionicons, type IconName} from '@/components/icons';
 import {Text, TextInput} from '@/components/ui/Typography';
 import {useChat} from '@/context/ChatContext';
+import {useSpeechInput} from '@/hooks/useSpeechInput';
 import type {RootStackScreenProps} from '@/navigation/types';
 import {colors} from '@/theme';
 import type {ChatItem} from '@/types/chat';
@@ -35,7 +36,8 @@ const ACTION_LABEL: Record<string, IconName> = {
 };
 
 export default function AssistantScreen({navigation}: RootStackScreenProps<'Assistant'>) {
-  const {items, loading, sendMessage, resolveAction, resetChat} = useChat();
+  const {items, loading, sendMessage, resolveAction, resetChat, readAloud, toggleReadAloud} =
+    useChat();
   const [text, setText] = useState('');
   const list = useRef<FlatList<ChatItem>>(null);
   useAssistantActions();
@@ -49,6 +51,10 @@ export default function AssistantScreen({navigation}: RootStackScreenProps<'Assi
     sendMessage(value);
     setText('');
   };
+
+  // Voice input: whatever the user says is sent like a typed message.
+  const voice = useSpeechInput(send);
+  const toggleMic = () => (voice.listening ? voice.stop() : voice.start());
 
   const renderItem = ({item}: {item: ChatItem}) => {
     switch (item.kind) {
@@ -128,8 +134,22 @@ export default function AssistantScreen({navigation}: RootStackScreenProps<'Assi
         </TouchableOpacity>
         <View className="ml-3 flex-1">
           <Text className="text-lg font-bold text-primary">Shopvra Assistant</Text>
-          <Text className="text-xs text-secondary">Search, add to cart, addresses and orders</Text>
+          <Text className="text-xs text-secondary">
+            Type or talk - search, cart, addresses, orders
+          </Text>
         </View>
+        <TouchableOpacity
+          onPress={toggleReadAloud}
+          className="mr-4"
+          accessibilityRole="switch"
+          accessibilityState={{checked: readAloud}}
+          accessibilityLabel={readAloud ? 'Stop reading replies aloud' : 'Read replies aloud'}>
+          <Ionicons
+            name={readAloud ? 'volume-high' : 'volume-mute-outline'}
+            size={24}
+            color={readAloud ? colors.accent : colors.primary}
+          />
+        </TouchableOpacity>
         <TouchableOpacity onPress={resetChat} accessibilityLabel="New chat" disabled={loading}>
           <Ionicons name="create-outline" size={24} color={colors.primary} />
         </TouchableOpacity>
@@ -176,17 +196,41 @@ export default function AssistantScreen({navigation}: RootStackScreenProps<'Assi
           }
         />
 
+        {(voice.listening || !!voice.error) && (
+          <View className="flex-row items-center px-4 pb-1 pt-2">
+            {voice.listening && <View className="mr-2 h-2.5 w-2.5 rounded-full bg-accent" />}
+            <Text className={`text-xs ${voice.error ? 'text-error' : 'text-secondary'}`}>
+              {voice.error ?? 'Listening... speak now, tap the mic to stop'}
+            </Text>
+          </View>
+        )}
         <View className="flex-row items-end border-t border-border px-3 py-2">
           <TextInput
             className="max-h-28 flex-1 rounded-2xl bg-surface px-4 py-3 text-primary"
-            placeholder="Ask Shopvra anything..."
+            placeholder={voice.listening ? 'Listening...' : 'Type or tap the mic to talk...'}
             placeholderTextColor={colors.muted}
-            value={text}
+            value={voice.listening ? voice.partial : text}
             onChangeText={setText}
+            editable={!voice.listening}
             multiline
             maxLength={1000}
             accessibilityLabel="Message"
           />
+          {voice.available && (
+            <TouchableOpacity
+              onPress={toggleMic}
+              disabled={loading}
+              className={`ml-2 h-11 w-11 items-center justify-center rounded-full ${
+                voice.listening ? 'bg-accent' : 'bg-surface'
+              }`}
+              accessibilityLabel={voice.listening ? 'Stop listening' : 'Speak your message'}>
+              <Ionicons
+                name={voice.listening ? 'stop' : 'mic'}
+                size={22}
+                color={voice.listening ? '#fff' : colors.primary}
+              />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             onPress={() => send(text)}
             disabled={!text.trim() || loading}

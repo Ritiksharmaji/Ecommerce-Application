@@ -3,6 +3,8 @@ import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
+  Modal,
+  Pressable,
   Platform,
   TouchableOpacity,
   View,
@@ -10,6 +12,7 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Ionicons, type IconName} from '@/components/icons';
 import {Text, TextInput} from '@/components/ui/Typography';
+import {CHAT_LANGUAGES} from '@/constants/languages';
 import {useChat} from '@/context/ChatContext';
 import {useSpeechInput} from '@/hooks/useSpeechInput';
 import type {RootStackScreenProps} from '@/navigation/types';
@@ -44,9 +47,20 @@ const ACTION_LABEL: Record<string, IconName> = {
 const CONFIRM_ACTIONS = ['clear_cart', 'delete_address', 'sign_out', 'delete_account'];
 
 export default function AssistantScreen({navigation}: RootStackScreenProps<'Assistant'>) {
-  const {items, loading, sendMessage, resolveAction, resetChat, readAloud, toggleReadAloud} =
-    useChat();
+  const {
+    items,
+    loading,
+    sendMessage,
+    resolveAction,
+    resetChat,
+    readAloud,
+    toggleReadAloud,
+    language,
+    setLanguage,
+  } = useChat();
   const [text, setText] = useState('');
+  const [pickingLanguage, setPickingLanguage] = useState(false);
+  const languageLabel = CHAT_LANGUAGES.find(l => l.code === language)?.label ?? 'English';
   const list = useRef<FlatList<ChatItem>>(null);
   useAssistantActions();
 
@@ -61,7 +75,7 @@ export default function AssistantScreen({navigation}: RootStackScreenProps<'Assi
   };
 
   // Voice input: whatever the user says is sent like a typed message.
-  const voice = useSpeechInput(send);
+  const voice = useSpeechInput(send, language);
   const toggleMic = () => (voice.listening ? voice.stop() : voice.start());
 
   const renderItem = ({item}: {item: ChatItem}) => {
@@ -168,8 +182,17 @@ export default function AssistantScreen({navigation}: RootStackScreenProps<'Assi
         </TouchableOpacity>
         <View className="ml-3 flex-1">
           <Text className="text-lg font-bold text-primary">Shopvra Assistant</Text>
-          <Text className="text-xs text-secondary">Type or talk - shop, cart, account, orders</Text>
+          <Text className="text-xs text-secondary">Type or talk in any language</Text>
         </View>
+        <TouchableOpacity
+          onPress={() => setPickingLanguage(true)}
+          className="mr-3 flex-row items-center rounded-full bg-surface px-2.5 py-1"
+          accessibilityLabel={`Chat language: ${languageLabel}. Change language`}>
+          <Ionicons name="language-outline" size={16} color={colors.primary} />
+          <Text className="ml-1 text-xs font-semibold text-primary" numberOfLines={1}>
+            {languageLabel}
+          </Text>
+        </TouchableOpacity>
         <TouchableOpacity
           onPress={toggleReadAloud}
           className="mr-4"
@@ -274,6 +297,45 @@ export default function AssistantScreen({navigation}: RootStackScreenProps<'Assi
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+      <Modal
+        visible={pickingLanguage}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPickingLanguage(false)}>
+        <Pressable
+          className="flex-1 justify-end bg-black/40"
+          onPress={() => setPickingLanguage(false)}>
+          <Pressable className="max-h-[70%] rounded-t-3xl bg-background px-5 pb-8 pt-5">
+            <Text className="text-lg font-bold text-primary">Chat language</Text>
+            <Text className="mb-3 text-xs text-secondary">
+              Used for the mic and read-aloud. You can also just type in any language.
+            </Text>
+            <FlatList
+              data={CHAT_LANGUAGES}
+              keyExtractor={l => l.code}
+              renderItem={({item: l}) => (
+                <TouchableOpacity
+                  onPress={() => {
+                    setLanguage(l.code);
+                    setPickingLanguage(false);
+                  }}
+                  accessibilityState={{selected: l.code === language}}
+                  className="flex-row items-center justify-between border-b border-border py-3.5">
+                  <Text className="text-base text-primary">
+                    {l.label}
+                    {l.name !== l.label ? (
+                      <Text className="text-sm text-secondary">{`  ${l.name}`}</Text>
+                    ) : null}
+                  </Text>
+                  {l.code === language && (
+                    <Ionicons name="checkmark" size={20} color={colors.accent} />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }

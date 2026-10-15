@@ -51,41 +51,94 @@ const SpeakerIcon = ({ on, className = 'w-5 h-5' }) => (
 const SpeechRecognitionImpl = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null
 const canSpeak = typeof window !== 'undefined' && 'speechSynthesis' in window
 
+// Languages the chat can listen in. Replies follow whatever language the user writes or speaks; this choice
+// tells the browser which language to listen for (speech recognition can't auto-detect) and is sent as a hint.
+const browserEnglish = typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('en') ? navigator.language : 'en-IN'
+const LANGUAGES = [
+    { code: browserEnglish, name: 'English', label: 'English' },
+    { code: 'hi-IN', name: 'Hindi', label: 'हिन्दी' },
+    { code: 'mr-IN', name: 'Marathi', label: 'मराठी' },
+    { code: 'bn-IN', name: 'Bengali', label: 'বাংলা' },
+    { code: 'ta-IN', name: 'Tamil', label: 'தமிழ்' },
+    { code: 'te-IN', name: 'Telugu', label: 'తెలుగు' },
+    { code: 'kn-IN', name: 'Kannada', label: 'ಕನ್ನಡ' },
+    { code: 'ml-IN', name: 'Malayalam', label: 'മലയാളം' },
+    { code: 'gu-IN', name: 'Gujarati', label: 'ગુજરાતી' },
+    { code: 'pa-IN', name: 'Punjabi', label: 'ਪੰਜਾਬੀ' },
+    { code: 'or-IN', name: 'Odia', label: 'ଓଡ଼ିଆ' },
+    { code: 'ur-IN', name: 'Urdu', label: 'اردو' },
+    { code: 'es-ES', name: 'Spanish', label: 'Español' },
+    { code: 'fr-FR', name: 'French', label: 'Français' },
+    { code: 'de-DE', name: 'German', label: 'Deutsch' },
+    { code: 'ar-SA', name: 'Arabic', label: 'العربية' },
+]
+const LANG_KEY = 'shopvra-chat-language'
+const initialLanguage = () => {
+    try {
+        const saved = localStorage.getItem(LANG_KEY)
+        if (saved && LANGUAGES.some((l) => l.code === saved)) return saved
+    } catch { /* storage blocked */ }
+    const browser = (typeof navigator !== 'undefined' && navigator.language) || ''
+    return LANGUAGES.find((l) => l.code.split('-')[0] === browser.split('-')[0].toLowerCase())?.code ?? LANGUAGES[0].code
+}
+
+// Which language a reply is written in, from its script (so a Hindi reply is read with a Hindi voice).
+const SCRIPTS = [
+    [/[\u0980-\u09FF]/, 'bn-IN'], [/[\u0A00-\u0A7F]/, 'pa-IN'], [/[\u0A80-\u0AFF]/, 'gu-IN'], [/[\u0B00-\u0B7F]/, 'or-IN'],
+    [/[\u0B80-\u0BFF]/, 'ta-IN'], [/[\u0C00-\u0C7F]/, 'te-IN'], [/[\u0C80-\u0CFF]/, 'kn-IN'], [/[\u0D00-\u0D7F]/, 'ml-IN'],
+]
+const replyLanguage = (text, selected) => {
+    const base = selected.split('-')[0]
+    if (/[\u0900-\u097F]/.test(text)) return ['hi', 'mr'].includes(base) ? selected : 'hi-IN' // Devanagari: Hindi or Marathi
+    if (/[\u0600-\u06FF]/.test(text)) return ['ur', 'ar'].includes(base) ? selected : 'ur-IN'
+    for (const [pattern, code] of SCRIPTS) if (pattern.test(text)) return code
+    return ['es', 'fr', 'de'].includes(base) ? selected : browserEnglish // Latin letters (incl. Hinglish)
+}
+
 // Pleasant female voices, best first (browsers don't say a voice's gender, so we match known names).
 // Edge has Microsoft's natural voices, Chrome has Google's, Safari/macOS has Apple's.
 const FEMALE_VOICES = [
     'Microsoft Aria Online', 'Microsoft Jenny Online', 'Microsoft Ava Online', 'Microsoft Emma Online', 'Microsoft Michelle Online',
     'Microsoft Neerja Online', 'Microsoft Sonia Online', 'Microsoft Libby Online', 'Microsoft Natasha Online',
-    'Google UK English Female', 'Google US English',
-    'Ava', 'Zoe', 'Samantha', 'Allison', 'Susan', 'Serena', 'Karen', 'Moira', 'Tessa', 'Veena', 'Isha',
-    'Microsoft Zira', 'Microsoft Hazel', 'Microsoft Heera', 'female',
+    'Microsoft Swara Online', 'Microsoft Aarohi Online', 'Microsoft Tanishaa Online', 'Microsoft Pallavi Online', 'Microsoft Shruti Online',
+    'Microsoft Sapna Online', 'Microsoft Dhwani Online', 'Microsoft Sobhna Online', 'Microsoft Vaani Online', 'Microsoft Gul Online',
+    'Microsoft Elvira Online', 'Microsoft Denise Online', 'Microsoft Katja Online', 'Microsoft Zariyah Online',
+    'Google UK English Female', 'Google US English', 'Google',
+    'Ava', 'Zoe', 'Samantha', 'Allison', 'Susan', 'Serena', 'Karen', 'Moira', 'Tessa', 'Veena', 'Isha', 'Lekha',
+    'Monica', 'Paulina', 'Amelie', 'Audrey', 'Anna', 'Petra', 'Mariam',
+    'Microsoft Zira', 'Microsoft Hazel', 'Microsoft Heera', 'Microsoft Kalpana', 'female',
 ]
-let chosenVoice = null
-const pickVoice = () => {
-    const english = window.speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().startsWith('en'))
-    const lang = (navigator.language || 'en-US').toLowerCase()
+const voiceCache = new Map()
+const pickVoice = (langCode) => {
+    if (voiceCache.has(langCode)) return voiceCache.get(langCode)
+    const base = langCode.split('-')[0].toLowerCase()
+    const matching = window.speechSynthesis.getVoices().filter((v) => v.lang.toLowerCase().replace('_', '-').split('-')[0] === base)
     const score = (v) => {
         const rank = FEMALE_VOICES.findIndex((name) => v.name.toLowerCase().includes(name.toLowerCase()))
-        if (rank < 0) return -1
-        let points = 1000 - rank * 10
+        if (/\bmale\b/i.test(v.name)) return 0 // e.g. "Google UK English Male"
+        let points = rank < 0 ? 0 : 1000 - rank * 10
         if (/natural|premium|enhanced|neural/i.test(v.name)) points += 300
-        if (v.lang.toLowerCase() === lang) points += 20
+        if (v.lang.toLowerCase().replace('_', '-') === langCode.toLowerCase()) points += 20
         return points
     }
-    chosenVoice = english.map((v) => ({ v, s: score(v) })).filter((x) => x.s >= 0).sort((a, b) => b.s - a.s)[0]?.v ?? null
+    // English: only voices we know are female; other languages: best match, else any voice for that language.
+    const ranked = matching.map((v) => ({ v, s: score(v) })).filter((x) => base !== 'en' || x.s > 0).sort((a, b) => b.s - a.s)
+    const voice = ranked[0]?.v ?? null
+    if (voice) voiceCache.set(langCode, voice)
+    return voice
 }
-if (canSpeak) {
-    pickVoice()
-    window.speechSynthesis.addEventListener?.('voiceschanged', pickVoice) // voices load asynchronously
-}
+if (canSpeak) window.speechSynthesis.addEventListener?.('voiceschanged', () => voiceCache.clear()) // voices load asynchronously
 
-const speakText = (text) => {
+const speakText = (text, langCode) => {
     if (!canSpeak || !text) return
     window.speechSynthesis.cancel()
-    if (!chosenVoice) pickVoice()
+    // No voice for a language? Use a related one with the same script (e.g. Marathi -> Hindi voice).
+    const FALLBACK = { mr: 'hi-IN', ur: 'hi-IN', pa: 'hi-IN' }
+    const voice = pickVoice(langCode) ?? (FALLBACK[langCode.split('-')[0]] ? pickVoice(FALLBACK[langCode.split('-')[0]]) : null)
     const utterance = new SpeechSynthesisUtterance(text.replace(/[*_#`>|]/g, ''))
-    if (chosenVoice) { utterance.voice = chosenVoice; utterance.lang = chosenVoice.lang }
-    else { utterance.lang = navigator.language || 'en-US'; utterance.pitch = 1.15 } // softer tone if no female voice
+    utterance.lang = voice?.lang ?? langCode
+    if (voice) utterance.voice = voice
+    else if (langCode.startsWith('en')) utterance.pitch = 1.15 // softer tone if no female voice
     utterance.rate = 0.98
     window.speechSynthesis.speak(utterance)
 }
@@ -350,6 +403,14 @@ const ChatWidget = () => {
     const [readAloud, setReadAloud] = useState(false)
     const readAloudRef = useRef(false)
     readAloudRef.current = readAloud
+    const [language, setLanguage] = useState(initialLanguage)
+    const languageRef = useRef(language)
+    languageRef.current = language
+    const languageName = () => LANGUAGES.find((l) => l.code === languageRef.current)?.name ?? 'English'
+    const changeLanguage = (code) => {
+        setLanguage(code)
+        try { localStorage.setItem(LANG_KEY, code) } catch { /* storage blocked */ }
+    }
     const recognitionRef = useRef(null)
 
     // New conversation on sign-out / account switch. A guest who signs in keeps the chat (the server moves it
@@ -365,9 +426,9 @@ const ChatWidget = () => {
     const post = async (body) => {
         setLoading(true)
         try {
-            const { data } = await api.post('/api/chat', { ...body, sessionId: sessionId.current }, { timeout: 60000 })
+            const { data } = await api.post('/api/chat', { ...body, sessionId: sessionId.current, language: languageName() }, { timeout: 60000 })
             sessionId.current = data.sessionId
-            if (readAloudRef.current && data.reply) speakText(data.reply)
+            if (readAloudRef.current && data.reply) speakText(data.reply, replyLanguage(data.reply, languageRef.current))
             const added = []
             if (data.reply || data.products?.length) added.push({ key: key(), kind: 'assistant', text: data.reply, products: data.products || [] })
             batch.current = new Map(data.actions.map((a) => [a.id, null]))
@@ -447,7 +508,7 @@ const ChatWidget = () => {
         if (!SpeechRecognitionImpl || loading) return
         setVoiceError('')
         const rec = new SpeechRecognitionImpl()
-        rec.lang = navigator.language || 'en-US'
+        rec.lang = languageRef.current
         rec.interimResults = true
         rec.continuous = false
         let finalText = ''
@@ -482,7 +543,7 @@ const ChatWidget = () => {
         sessionId.current = undefined
         batch.current = new Map()
         setItems([{ key: key(), kind: 'assistant', text: note, products: [] }])
-        if (readAloudRef.current) speakText(note)
+        if (readAloudRef.current) speakText(note, browserEnglish)
     }
 
     return (
@@ -499,8 +560,12 @@ const ChatWidget = () => {
                         <div className='w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-accent'><SparkIcon className='w-5 h-5' /></div>
                         <div className='flex-1'>
                             <p className='font-semibold leading-tight'>Shopvra Assistant</p>
-                            <p className='text-xs text-gray-300'>Shop, cart, account and orders</p>
+                            <p className='text-xs text-gray-300'>Talk in any language</p>
                         </div>
+                        <select value={language} onChange={(e) => changeLanguage(e.target.value)} aria-label='Chat language' title='Language for voice and replies'
+                            className='bg-white/10 text-white text-xs rounded-md px-1.5 py-1 mr-1 outline-none max-w-[92px] cursor-pointer'>
+                            {LANGUAGES.map((l) => <option key={l.code} value={l.code} className='text-primary'>{l.label}</option>)}
+                        </select>
                         {canSpeak && (
                             <button onClick={toggleReadAloud} title={readAloud ? 'Stop reading replies aloud' : 'Read replies aloud'} aria-pressed={readAloud}
                                 className={`mr-1 ${readAloud ? 'text-accent' : 'text-gray-300 hover:text-white'}`}>
@@ -516,7 +581,7 @@ const ChatWidget = () => {
                             <div className='m-auto text-center px-4'>
                                 <div className='mx-auto mb-3 w-14 h-14 rounded-2xl bg-primary text-accent flex items-center justify-center'><SparkIcon className='w-7 h-7' /></div>
                                 <p className='text-lg font-semibold text-primary'>Hi! How can I help?</p>
-                                <p className='text-sm text-secondary mb-4'>Ask me to find products, manage your cart, sign in or create an account, save an address or place an order.</p>
+                                <p className='text-sm text-secondary mb-4'>Ask me to find products, manage your cart, sign in or create an account, save an address or place an order - in English, हिन्दी, मराठी or any language.</p>
                                 <div className='flex flex-wrap justify-center gap-2'>
                                     {SUGGESTIONS.map((s) => <button key={s} onClick={() => send(s)} className='text-xs border border-border rounded-full px-3 py-1.5 hover:bg-surface'>{s}</button>)}
                                 </div>

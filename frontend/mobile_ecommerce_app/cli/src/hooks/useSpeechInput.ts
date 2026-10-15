@@ -26,7 +26,10 @@ async function ensureMicPermission(): Promise<boolean> {
  * `start()` listens; the live transcript is in `partial`; when the user stops talking the final text
  * is passed to `onFinalText` (the chat sends it like a typed message).
  */
-export function useSpeechInput(onFinalText: (text: string) => void) {
+export function useSpeechInput(
+  onFinalText: (text: string) => void,
+  language: string = deviceLocale(),
+) {
   const [available, setAvailable] = useState(false);
   const [listening, setListening] = useState(false);
   const [partial, setPartial] = useState('');
@@ -71,12 +74,12 @@ export function useSpeechInput(onFinalText: (text: string) => void) {
     }
     try {
       setPartial('');
-      await Voice.start(deviceLocale());
+      await Voice.start(language);
       setListening(true);
     } catch {
       setError('Voice input is not available right now');
     }
-  }, []);
+  }, [language]);
 
   const stop = useCallback(() => {
     Voice.stop().catch(() => undefined);

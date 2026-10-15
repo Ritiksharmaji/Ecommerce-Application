@@ -9,7 +9,9 @@ import React, {
   useState,
 } from 'react';
 import {useAuth} from '@/context/AuthContext';
+import {chatLanguageName, defaultChatLanguage, replyLanguage} from '@/constants/languages';
 import {useReadAloud} from '@/hooks/useReadAloud';
+import {deviceLocale} from '@/hooks/useSpeechInput';
 import {chatApi, type ChatRequest} from '@/services/api';
 import type {ChatActionResult, ChatItem, ChatResponse} from '@/types/chat';
 import {getErrorMessage} from '@/utils/errors';
@@ -26,6 +28,9 @@ interface ChatContextValue {
   /** Read assistant replies aloud (off by default - typing/reading is the default mode). */
   readAloud: boolean;
   toggleReadAloud: () => void;
+  /** Language code for voice input/output (replies follow the user's own language). */
+  language: string;
+  setLanguage: (code: string) => void;
 }
 
 const ChatContext = createContext<ChatContextValue | undefined>(undefined);
@@ -44,6 +49,9 @@ export function ChatProvider({children}: {children: ReactNode}) {
   const [readAloud, setReadAloud] = useState(false);
   const readAloudRef = useRef(readAloud);
   readAloudRef.current = readAloud;
+  const [language, setLanguage] = useState(() => defaultChatLanguage(deviceLocale()));
+  const languageRef = useRef(language);
+  languageRef.current = language;
   const {speak, stop: stopSpeaking} = useReadAloud();
   const sessionId = useRef<string | undefined>(undefined);
   /** Results for the current batch of actions (null = still waiting). */
@@ -89,7 +97,7 @@ export function ChatProvider({children}: {children: ReactNode}) {
       sessionId.current = undefined;
       batch.current = new Map();
       setItems([{key: nextKey(), kind: 'assistant', text: note, products: []}]);
-      if (readAloudRef.current) speak(note);
+      if (readAloudRef.current) speak(note, 'en-IN');
     },
     [speak],
   );
@@ -97,7 +105,9 @@ export function ChatProvider({children}: {children: ReactNode}) {
   const handleResponse = useCallback(
     (res: ChatResponse) => {
       sessionId.current = res.sessionId;
-      if (readAloudRef.current && res.reply) speak(res.reply);
+      if (readAloudRef.current && res.reply) {
+        speak(res.reply, replyLanguage(res.reply, languageRef.current));
+      }
       const added: ChatItem[] = [];
       if (res.reply || res.products.length) {
         added.push({key: nextKey(), kind: 'assistant', text: res.reply, products: res.products});
@@ -115,7 +125,13 @@ export function ChatProvider({children}: {children: ReactNode}) {
     async (body: ChatRequest) => {
       setLoading(true);
       try {
-        handleResponse(await chatApi.send({...body, sessionId: sessionId.current}));
+        handleResponse(
+          await chatApi.send({
+            ...body,
+            sessionId: sessionId.current,
+            language: chatLanguageName(languageRef.current),
+          }),
+        );
       } catch (error) {
         setItems(prev => [
           ...prev,
@@ -182,8 +198,20 @@ export function ChatProvider({children}: {children: ReactNode}) {
       endChat,
       readAloud,
       toggleReadAloud,
+      language,
+      setLanguage,
     }),
-    [items, loading, sendMessage, resolveAction, resetChat, endChat, readAloud, toggleReadAloud],
+    [
+      items,
+      loading,
+      sendMessage,
+      resolveAction,
+      resetChat,
+      endChat,
+      readAloud,
+      toggleReadAloud,
+      language,
+    ],
   );
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

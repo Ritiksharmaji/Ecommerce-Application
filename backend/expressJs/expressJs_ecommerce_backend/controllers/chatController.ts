@@ -12,6 +12,8 @@ const MAX_TURNS = 40;
 const bodySchema = z.object({
     sessionId: z.string().optional(),
     message: z.string().trim().max(1000).optional(),
+    /** Language picked in the chat (e.g. "Marathi") - used for voice; replies follow the user's own words. */
+    language: z.string().trim().max(40).regex(/^[\p{L} ()-]*$/u).optional(),
     actionResults: z.array(z.object({ id: z.string(), ok: z.boolean(), result: z.string().max(2000) })).max(10).optional(),
 });
 
@@ -38,7 +40,7 @@ export const chat = async (req: Request, res: Response) => {
     }
     const parsed = bodySchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ success: false, message: "Invalid request" });
-    const { sessionId, actionResults = [] } = parsed.data;
+    const { sessionId, language, actionResults = [] } = parsed.data;
     const message = parsed.data.message ? hidePasswords(parsed.data.message) : undefined;
     const userId: mongoose.Types.ObjectId | null = req.user?._id ?? null;
 
@@ -57,7 +59,8 @@ export const chat = async (req: Request, res: Response) => {
         }
 
         // 2. User turn = results of pending app actions + the new message.
-        const contextNote = userId ? `(App context: signed in as ${req.user.name || "a customer"})` : "(App context: guest, not signed in)";
+        const who = userId ? `signed in as ${req.user.name || "a customer"}` : "guest, not signed in";
+        const contextNote = `(App context: ${who}${language ? `; language selected in the app: ${language}` : ""})`;
         const history = [...(session.messages as unknown[]), provider.buildUserTurn(session.pending as any, actionResults, message, contextNote)];
 
         // 3. AI runs (calls tools, may pause for app actions).

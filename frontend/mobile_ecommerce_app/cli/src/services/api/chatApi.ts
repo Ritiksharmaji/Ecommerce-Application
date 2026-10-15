@@ -4,6 +4,8 @@ import {apiClient} from './client';
 export interface ChatRequest {
   sessionId?: string;
   message?: string;
+  /** Language picked in the chat (English name, e.g. "Marathi"). */
+  language?: string;
   actionResults?: ChatActionResult[];
 }
 

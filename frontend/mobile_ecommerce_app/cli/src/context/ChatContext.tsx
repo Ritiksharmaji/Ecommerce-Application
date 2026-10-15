@@ -21,6 +21,8 @@ interface ChatContextValue {
   /** Report what the app did for an assistant action; the turn resumes once every action has a result. */
   resolveAction: (id: string, ok: boolean, result: string) => void;
   resetChat: () => void;
+  /** Runs sign-out / account deletion, then ends the conversation and leaves a short note. */
+  endChat: (operation: () => Promise<void>, note: string) => Promise<void>;
   /** Read assistant replies aloud (off by default - typing/reading is the default mode). */
   readAloud: boolean;
   toggleReadAloud: () => void;
@@ -62,12 +64,35 @@ export function ChatProvider({children}: {children: ReactNode}) {
     });
   }, [stopSpeaking]);
 
-  // A conversation belongs to one account: start fresh on sign-out / account switch.
+  // A conversation belongs to one account: start fresh on sign-out / account switch. A guest who signs in
+  // (e.g. from the chat's sign-in form) keeps the conversation - the server moves it to the account.
   const prevToken = useRef(token);
+  const keepNextReset = useRef(false);
   useEffect(() => {
-    if (prevToken.current && prevToken.current !== token) resetChat();
+    if (prevToken.current && prevToken.current !== token) {
+      if (keepNextReset.current) keepNextReset.current = false;
+      else resetChat();
+    }
     prevToken.current = token;
   }, [token, resetChat]);
+
+  const endChat = useCallback(
+    async (operation: () => Promise<void>, note: string) => {
+      // The token change from `operation` must not wipe the note we add below.
+      keepNextReset.current = true;
+      try {
+        await operation();
+      } catch (error) {
+        keepNextReset.current = false;
+        throw error;
+      }
+      sessionId.current = undefined;
+      batch.current = new Map();
+      setItems([{key: nextKey(), kind: 'assistant', text: note, products: []}]);
+      if (readAloudRef.current) speak(note);
+    },
+    [speak],
+  );
 
   const handleResponse = useCallback(
     (res: ChatResponse) => {
@@ -148,8 +173,17 @@ export function ChatProvider({children}: {children: ReactNode}) {
   );
 
   const value = useMemo(
-    () => ({items, loading, sendMessage, resolveAction, resetChat, readAloud, toggleReadAloud}),
-    [items, loading, sendMessage, resolveAction, resetChat, readAloud, toggleReadAloud],
+    () => ({
+      items,
+      loading,
+      sendMessage,
+      resolveAction,
+      resetChat,
+      endChat,
+      readAloud,
+      toggleReadAloud,
+    }),
+    [items, loading, sendMessage, resolveAction, resetChat, endChat, readAloud, toggleReadAloud],
   );
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

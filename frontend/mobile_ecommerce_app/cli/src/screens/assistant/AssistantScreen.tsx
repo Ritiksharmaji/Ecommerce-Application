@@ -15,7 +15,9 @@ import {useSpeechInput} from '@/hooks/useSpeechInput';
 import type {RootStackScreenProps} from '@/navigation/types';
 import {colors} from '@/theme';
 import type {ChatItem} from '@/types/chat';
+import AccountActionCard from './components/AccountActionCard';
 import AddressFormCard from './components/AddressFormCard';
+import AuthFormCard from './components/AuthFormCard';
 import ChatProductCards from './components/ChatProductCards';
 import ConfirmOrderCard from './components/ConfirmOrderCard';
 import {useAssistantActions} from './useAssistantActions';
@@ -24,6 +26,7 @@ const SUGGESTIONS = [
   'Show me denim jackets',
   'Shoes under $60',
   "What's in my cart?",
+  'Sign me in',
   'Add a new address',
   'Where is my order?',
 ];
@@ -33,7 +36,12 @@ const ACTION_LABEL: Record<string, IconName> = {
   add_to_cart: 'bag-add-outline',
   show_address_form: 'location-outline',
   confirm_order: 'receipt-outline',
+  update_cart_item: 'bag-check-outline',
+  update_wishlist: 'heart-outline',
 };
+
+/** Actions rendered as confirmation cards by AccountActionCard. */
+const CONFIRM_ACTIONS = ['clear_cart', 'delete_address', 'sign_out', 'delete_account'];
 
 export default function AssistantScreen({navigation}: RootStackScreenProps<'Assistant'>) {
   const {items, loading, sendMessage, resolveAction, resetChat, readAloud, toggleReadAloud} =
@@ -95,6 +103,28 @@ export default function AssistantScreen({navigation}: RootStackScreenProps<'Assi
             </View>
           );
         }
+        if (action.name === 'show_auth_form') {
+          return (
+            <View className="mb-3">
+              <AuthFormCard
+                prefill={action.input}
+                disabled={done}
+                onDone={(ok, result) => resolveAction(action.id, ok, result)}
+              />
+            </View>
+          );
+        }
+        if (CONFIRM_ACTIONS.includes(action.name)) {
+          return (
+            <View className="mb-3">
+              <AccountActionCard
+                action={action}
+                disabled={done}
+                onDone={(ok, result) => resolveAction(action.id, ok, result)}
+              />
+            </View>
+          );
+        }
         if (action.name === 'confirm_order') {
           return (
             <View className="mb-3">
@@ -110,7 +140,11 @@ export default function AssistantScreen({navigation}: RootStackScreenProps<'Assi
           <View className="mb-3 flex-row items-center self-start rounded-full bg-surface px-3 py-1.5">
             {done ? (
               <Ionicons
-                name={status === 'done' ? ACTION_LABEL[action.name] : 'alert-circle-outline'}
+                name={
+                  status === 'done'
+                    ? ACTION_LABEL[action.name] ?? 'checkmark-circle-outline'
+                    : 'alert-circle-outline'
+                }
                 size={14}
                 color={status === 'done' ? colors.secondary : colors.error}
               />
@@ -134,9 +168,7 @@ export default function AssistantScreen({navigation}: RootStackScreenProps<'Assi
         </TouchableOpacity>
         <View className="ml-3 flex-1">
           <Text className="text-lg font-bold text-primary">Shopvra Assistant</Text>
-          <Text className="text-xs text-secondary">
-            Type or talk - search, cart, addresses, orders
-          </Text>
+          <Text className="text-xs text-secondary">Type or talk - shop, cart, account, orders</Text>
         </View>
         <TouchableOpacity
           onPress={toggleReadAloud}

@@ -10,7 +10,18 @@ export interface ChatProduct {
   rating: number;
 }
 
-export type ChatActionName = 'navigate' | 'add_to_cart' | 'show_address_form' | 'confirm_order';
+export type ChatActionName =
+  | 'navigate'
+  | 'add_to_cart'
+  | 'show_address_form'
+  | 'confirm_order'
+  | 'show_auth_form'
+  | 'update_cart_item'
+  | 'clear_cart'
+  | 'update_wishlist'
+  | 'delete_address'
+  | 'sign_out'
+  | 'delete_account';
 
 /** A step the assistant asks the app to perform; the app reports the outcome back. */
 export interface ChatAction {

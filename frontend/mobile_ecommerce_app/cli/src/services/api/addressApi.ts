@@ -16,4 +16,9 @@ export const addressApi = {
     const {data} = await apiClient.post<ApiResponse<Address>>('/api/addresses', address);
     return data.data;
   },
+
+  /** DELETE /api/addresses/:id */
+  async remove(id: string): Promise<void> {
+    await apiClient.delete(`/api/addresses/${id}`);
+  },
 };

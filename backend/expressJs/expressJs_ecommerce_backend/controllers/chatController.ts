@@ -16,6 +16,13 @@ const bodySchema = z.object({
 });
 
 /**
+ * Passwords must never reach the AI provider (or our chat history). Users are asked to type them in the in-chat
+ * sign-in form, but if someone writes "my password is xyz" anyway we hide the value before the AI sees it.
+ */
+const PASSWORD_PATTERN = /\b(password|passcode|passwd|pwd|pass)\b(\s*(?:is|:|=|-)?\s*)(\S+)/gi;
+export const hidePasswords = (text: string) => text.replace(PASSWORD_PATTERN, "$1$2[hidden]");
+
+/**
  * POST /api/chat  (optionalAuth) - one shopping-assistant turn.
  *
  * Body:     { sessionId?, message?, actionResults? }
@@ -31,7 +38,8 @@ export const chat = async (req: Request, res: Response) => {
     }
     const parsed = bodySchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ success: false, message: "Invalid request" });
-    const { sessionId, message, actionResults = [] } = parsed.data;
+    const { sessionId, actionResults = [] } = parsed.data;
+    const message = parsed.data.message ? hidePasswords(parsed.data.message) : undefined;
     const userId: mongoose.Types.ObjectId | null = req.user?._id ?? null;
 
     try {

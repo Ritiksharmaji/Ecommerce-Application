@@ -4,6 +4,7 @@ import User from "../models/User.js";
 import Cart from "../models/Cart.js";
 import Wishlist from "../models/Wishlist.js";
 import Address from "../models/Address.js";
+import ChatSession from "../models/ChatSession.js";
 
 const signToken = (userId: string): string => {
     const secret = process.env.JWT_SECRET;
@@ -102,6 +103,7 @@ export const deleteMe = async (req: Request, res: Response) => {
             Cart.deleteOne({ user: user._id }),
             Wishlist.deleteOne({ user: user._id }),
             Address.deleteMany({ user: user._id }),
+            ChatSession.deleteMany({ user: user._id }),
         ]);
         await user.deleteOne();
 

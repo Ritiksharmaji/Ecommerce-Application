@@ -4,6 +4,7 @@ import Product from "../../models/Product.js";
 import Cart from "../../models/Cart.js";
 import Address from "../../models/Address.js";
 import Order from "../../models/Order.js";
+import Wishlist from "../../models/Wishlist.js";
 import type { ToolContext } from "./types.js";
 
 /**
@@ -66,6 +67,11 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         parameters: obj({}),
     },
     {
+        name: "get_wishlist",
+        description: "The signed-in user's wishlist (saved / favourite products). Requires sign-in.",
+        parameters: obj({}),
+    },
+    {
         name: "get_orders",
         description: "The signed-in user's 10 most recent orders with status. Requires sign-in.",
         parameters: obj({}),
@@ -119,11 +125,67 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
             notes: { type: "string", description: "Delivery notes, empty string for none." },
         }, ["addressId", "paymentMethod", "notes"]),
     },
+    {
+        name: "show_auth_form",
+        description:
+            "Show a sign-in or create-account form in the chat. The user types the password in the form, so it never " +
+            "reaches you. Prefill the email/name the user mentioned (empty string otherwise). Use mode 'signup' when the user " +
+            "wants a new account, 'signin' otherwise. Only for guests.",
+        parameters: obj({
+            mode: { type: "string", enum: ["signin", "signup"] },
+            email: { type: "string" },
+            name: { type: "string", description: "Full name for signup, empty string otherwise." },
+        }, ["mode", "email", "name"]),
+    },
+    {
+        name: "update_cart_item",
+        description:
+            "Change the quantity of a cart line, or remove it with quantity 0. productId and size must match a line from get_cart. " +
+            "Works for guests too.",
+        parameters: obj({
+            productId: { type: "string" },
+            size: { type: "string", description: "The line's size, empty string if none." },
+            quantity: { type: "integer", description: "0-10; 0 removes the item." },
+        }, ["productId", "size", "quantity"]),
+    },
+    {
+        name: "clear_cart",
+        description: "Show a confirmation card to remove every item from the cart. Works for guests too.",
+        parameters: obj({}),
+    },
+    {
+        name: "update_wishlist",
+        description: "Add a product to (add=true) or remove it from (add=false) the wishlist. Works for guests too.",
+        parameters: obj({
+            productId: { type: "string" },
+            add: { type: "boolean" },
+        }, ["productId", "add"]),
+    },
+    {
+        name: "delete_address",
+        description: "Show a confirmation card to delete one saved address (id from get_saved_addresses). Requires sign-in.",
+        parameters: obj({ addressId: { type: "string" } }, ["addressId"]),
+    },
+    {
+        name: "sign_out",
+        description: "Show a confirmation card to sign the user out. This ends the chat. Requires sign-in.",
+        parameters: obj({}),
+    },
+    {
+        name: "delete_account",
+        description:
+            "Show the permanent account-deletion card; the user re-enters their password in the card to confirm. Deletes the " +
+            "account, addresses, cart and wishlist. Only when the user clearly asks to delete their account. Requires sign-in.",
+        parameters: obj({}),
+    },
 ];
 
-export const CLIENT_ACTIONS = new Set(["navigate", "add_to_cart", "show_address_form", "confirm_order"]);
+export const CLIENT_ACTIONS = new Set([
+    "navigate", "add_to_cart", "show_address_form", "confirm_order",
+    "show_auth_form", "update_cart_item", "clear_cart", "update_wishlist", "delete_address", "sign_out", "delete_account",
+]);
 /** Actions that only make sense for a signed-in user. */
-const AUTH_ACTIONS = new Set(["show_address_form", "confirm_order"]);
+const AUTH_ACTIONS = new Set(["show_address_form", "confirm_order", "delete_address", "sign_out", "delete_account"]);
 
 // Input validation (inputs are model output - never trust them blindly).
 const schemas = {
@@ -179,6 +241,9 @@ export function checkClientAction(name: string, input: any, ctx: ToolContext): s
         if (input?.screen === "OrderDetails" && !isId(input.orderId)) return "OrderDetails needs a valid orderId.";
     }
     if (name === "add_to_cart" && !isId(input?.productId)) return "add_to_cart needs a valid productId from search results.";
+    if (name === "show_auth_form" && ctx.userId) return "The user is already signed in.";
+    if ((name === "update_cart_item" || name === "update_wishlist") && !isId(input?.productId)) return `${name} needs a valid productId.`;
+    if (name === "delete_address" && !isId(input?.addressId)) return "delete_address needs a saved addressId (use get_saved_addresses).";
     if (name === "confirm_order" && !isId(input?.addressId)) return "confirm_order needs a saved addressId (use get_saved_addresses).";
     return null;
 }
@@ -241,6 +306,15 @@ export async function runServerTool(name: string, rawInput: unknown, ctx: ToolCo
             return json(list.map((a: any) => ({
                 id: String(a._id), type: a.type, street: a.street, city: a.city, state: a.state, zipCode: a.zipCode, country: a.country, isDefault: a.isDefault,
             })));
+        }
+        case "get_wishlist": {
+            if (!ctx.userId) return LOGIN_REQUIRED;
+            const wishlist: any = await Wishlist.findOne({ user: ctx.userId }).populate("products", "name price comparePrice images category ratings isActive").lean();
+            const list = (wishlist?.products ?? []).filter((p: any) => p?.isActive !== false);
+            return {
+                content: JSON.stringify(list.map((p: any) => ({ id: String(p._id), name: p.name, price: p.price, category: p.category }))),
+                products: list.map(toCard),
+            };
         }
         case "get_orders": {
             if (!ctx.userId) return LOGIN_REQUIRED;
